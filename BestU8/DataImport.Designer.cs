@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.importtypeGB = new System.Windows.Forms.GroupBox();
+            this.importdataopenfilebutton = new System.Windows.Forms.Button();
+            this.importdatafiletextBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.importdataopenFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.importdatafiletextBox = new System.Windows.Forms.TextBox();
-            this.importdataopenfilebutton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.importdataprogressBar = new System.Windows.Forms.ProgressBar();
             this.label3 = new System.Windows.Forms.Label();
@@ -54,6 +54,23 @@
             this.importtypeGB.TabStop = false;
             this.importtypeGB.Text = "XXXXX数据导入";
             // 
+            // importdataopenfilebutton
+            // 
+            this.importdataopenfilebutton.Location = new System.Drawing.Point(668, 29);
+            this.importdataopenfilebutton.Name = "importdataopenfilebutton";
+            this.importdataopenfilebutton.Size = new System.Drawing.Size(75, 23);
+            this.importdataopenfilebutton.TabIndex = 2;
+            this.importdataopenfilebutton.Text = "打开";
+            this.importdataopenfilebutton.UseVisualStyleBackColor = true;
+            this.importdataopenfilebutton.Click += new System.EventHandler(this.importdataopenfilebutton_Click);
+            // 
+            // importdatafiletextBox
+            // 
+            this.importdatafiletextBox.Location = new System.Drawing.Point(122, 32);
+            this.importdatafiletextBox.Name = "importdatafiletextBox";
+            this.importdatafiletextBox.Size = new System.Drawing.Size(523, 21);
+            this.importdatafiletextBox.TabIndex = 1;
+            // 
             // label1
             // 
             this.label1.AutoSize = true;
@@ -66,23 +83,6 @@
             // importdataopenFileDialog
             // 
             this.importdataopenFileDialog.FileName = "openFileDialog";
-            // 
-            // importdatafiletextBox
-            // 
-            this.importdatafiletextBox.Location = new System.Drawing.Point(122, 32);
-            this.importdatafiletextBox.Name = "importdatafiletextBox";
-            this.importdatafiletextBox.Size = new System.Drawing.Size(523, 21);
-            this.importdatafiletextBox.TabIndex = 1;
-            // 
-            // importdataopenfilebutton
-            // 
-            this.importdataopenfilebutton.Location = new System.Drawing.Point(668, 29);
-            this.importdataopenfilebutton.Name = "importdataopenfilebutton";
-            this.importdataopenfilebutton.Size = new System.Drawing.Size(75, 23);
-            this.importdataopenfilebutton.TabIndex = 2;
-            this.importdataopenfilebutton.Text = "打开";
-            this.importdataopenfilebutton.UseVisualStyleBackColor = true;
-            this.importdataopenfilebutton.Click += new System.EventHandler(this.importdataopenfilebutton_Click);
             // 
             // label2
             // 
@@ -125,6 +125,7 @@
             this.importdatabutton.TabIndex = 5;
             this.importdatabutton.Text = "数据导入";
             this.importdatabutton.UseVisualStyleBackColor = true;
+            this.importdatabutton.Click += new System.EventHandler(this.importdatabutton_Click);
             // 
             // closebutton
             // 

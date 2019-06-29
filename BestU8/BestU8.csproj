@@ -97,17 +97,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="U8Login">
-      <Guid>{B791AEA7-739C-48B7-AD29-D70B1C36A30F}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>29</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\hideproduct_16x16.png" />
   </ItemGroup>
   <ItemGroup>
@@ -115,6 +104,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\addnewdatasource_16x16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\U8GLVouchers\U8GLVouchers.csproj">
+      <Project>{dce8a9f8-01b5-46bd-83d6-b3b224f57356}</Project>
+      <Name>U8GLVouchers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

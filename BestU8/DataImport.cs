@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using U8GLVouchers;
 
 namespace BestU8
 {
@@ -42,5 +43,34 @@ namespace BestU8
         {
             this.Close();
         }
+
+        private void importdatabutton_Click(object sender, EventArgs e)
+        {
+            //总账凭证导入
+            if (Pubvar.gdataimporttype == "总账凭证导入")
+            {
+                GLvouchersimport();
+            }
+
+            //采购入库单导入
+            if (Pubvar.gdataimporttype == "采购入库单导入")
+            {
+                //ReceiptNotesimport();
+            }
+        }
+
+        private void GLvouchersimport()
+        {
+            BestU8GLVouchers v_importglvouchers = new BestU8GLVouchers();
+            int v_importsuccessrows =0,v_importfailurerows =0;
+            //根据总账导入EXCEL模板将数据导入到dataset 中
+            DataSet v_vouchersfromexcel = new DataSet();
+            DataSet v_returnvouchers = new DataSet();
+
+            //调用总账导入功能
+            bool  v_importglvouchersflag= v_importglvouchers.GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, v_vouchersfromexcel, Pubvar.gu8userdata.UserId,out v_importsuccessrows,out v_importfailurerows,out v_returnvouchers);
+
+        }
+
     }
 }

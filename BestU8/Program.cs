@@ -32,6 +32,7 @@ namespace BestU8
             UFSoft.U8.Framework.LoginContext.UserData u8userdata = new UFSoft.U8.Framework.LoginContext.UserData();
             u8userdata = u8LoginUI.GetLoginInfo();
 
+            /*
             //构建u8Login并执行登陆
             U8Login.clsLogin u8Login = new U8Login.clsLogin();
             String sSubId = u8userdata.cSubID;              // "AS";
@@ -57,7 +58,12 @@ namespace BestU8
                 Application.Run(new MainForm());
 
             }
-            
+            */
+            Pubvar.gu8LoginUI = u8LoginUI;
+            Pubvar.gu8userdata = u8userdata;
+            Pubvar.gdataimporttype = "";
+            Application.Run(new MainForm());
+
         }
     }
 }

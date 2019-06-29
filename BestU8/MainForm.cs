@@ -107,7 +107,7 @@ namespace BestU8
             //从这个类里可以获取登陆信息、数据库连接信息等等
             UFSoft.U8.Framework.LoginContext.UserData u8userdata = new UFSoft.U8.Framework.LoginContext.UserData();
             u8userdata = u8LoginUI.GetLoginInfo();
-
+            /*
             //构建u8Login并执行登陆
             U8Login.clsLogin u8Login = new U8Login.clsLogin();
             String sSubId = u8userdata.cSubID;              // "AS";
@@ -141,6 +141,7 @@ namespace BestU8
                 //将重登录之前选中的菜单项置为未选中状态
                 u8toolBox.SelectedTab.SelectedItem.Selected = false;
             }
+            */
         }
 
         private void exitMenuItem_Click(object sender, EventArgs e)

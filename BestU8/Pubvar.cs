@@ -11,7 +11,7 @@ namespace BestU8
         
         public static UFSoft.U8.Framework.LoginContext.UserData gu8userdata;
 
-        public static U8Login.clsLogin gu8Login;
+        //public static U8Login.clsLogin gu8Login;
 
         public static string gdataimporttype;
     }
