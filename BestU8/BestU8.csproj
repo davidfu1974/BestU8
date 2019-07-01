@@ -32,6 +32,26 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ADODB, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>C:\U8SOFT\Interop\ADODB.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.ADODB">
+      <HintPath>dll\Interop.ADODB.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Aliases>interadodb</Aliases>
+    </Reference>
+    <Reference Include="Interop.MSXML2">
+      <HintPath>C:\U8SOFT\Interop\Interop.MSXML2.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.U8Login, Version=1.14.0.0, Culture=neutral, PublicKeyToken=79a4e7ad54eeabca, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>C:\U8SOFT\Interop\Interop.U8Login.dll</HintPath>
+      <Aliases>interU8lg</Aliases>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -45,6 +65,15 @@
     <Reference Include="ToolBox, Version=1.0.4.0, Culture=neutral">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\software\ToolBox_Demo\ToolBox_Demo\ToolBox.dll</HintPath>
+    </Reference>
+    <Reference Include="UFIDA.U8.MomServiceCommon">
+      <HintPath>C:\U8SOFT\UFMOM\U8APIFramework\UFIDA.U8.MomServiceCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="UFIDA.U8.U8APIFramework">
+      <HintPath>C:\U8SOFT\UFMOM\U8APIFramework\UFIDA.U8.U8APIFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="UFIDA.U8.U8MOMAPIFramework">
+      <HintPath>C:\U8SOFT\UFMOM\U8APIFramework\UFIDA.U8.U8MOMAPIFramework.dll</HintPath>
     </Reference>
     <Reference Include="UFSoft.U8.Framework.Login.UI">
       <HintPath>C:\U8SOFT\Framework\UFSoft.U8.Framework.Login.UI.dll</HintPath>
@@ -106,14 +135,24 @@
     <None Include="Resources\addnewdatasource_16x16.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\U8APILib\U8APILib.csproj">
-      <Project>{15313acb-9058-43d3-b044-42b0e817a30d}</Project>
-      <Name>U8APILib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\U8GLVouchers\U8GLVouchers.csproj">
-      <Project>{dce8a9f8-01b5-46bd-83d6-b3b224f57356}</Project>
-      <Name>U8GLVouchers</Name>
-    </ProjectReference>
+    <COMReference Include="CVoucher">
+      <Guid>{A5E2D9AF-F2BF-44BC-8689-FA00B0459C33}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>2</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="U8Login">
+      <Guid>{B791AEA7-739C-48B7-AD29-D70B1C36A30F}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>29</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

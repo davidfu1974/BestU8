@@ -31,6 +31,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ADODB, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>C:\U8SOFT\Interop\ADODB.dll</HintPath>
+    </Reference>
     <Reference Include="Interop.MSXML2">
       <HintPath>C:\U8SOFT\Interop\Interop.MSXML2.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -60,6 +65,26 @@
   <ItemGroup>
     <Compile Include="U8APILib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="CVoucher">
+      <Guid>{A5E2D9AF-F2BF-44BC-8689-FA00B0459C33}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>2</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="U8Login">
+      <Guid>{B791AEA7-739C-48B7-AD29-D70B1C36A30F}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>29</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
