@@ -106,6 +106,10 @@
     <None Include="Resources\addnewdatasource_16x16.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\U8APILib\U8APILib.csproj">
+      <Project>{15313acb-9058-43d3-b044-42b0e817a30d}</Project>
+      <Name>U8APILib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\U8GLVouchers\U8GLVouchers.csproj">
       <Project>{dce8a9f8-01b5-46bd-83d6-b3b224f57356}</Project>
       <Name>U8GLVouchers</Name>

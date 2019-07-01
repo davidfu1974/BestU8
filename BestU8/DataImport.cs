@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using U8GLVouchers;
+using U8APILib;
 
 namespace BestU8
 {
@@ -55,7 +56,7 @@ namespace BestU8
             //采购入库单导入
             if (Pubvar.gdataimporttype == "采购入库单导入")
             {
-                //ReceiptNotesimport();
+                ReceiptNoteimport();
             }
         }
 
@@ -70,6 +71,20 @@ namespace BestU8
             //调用总账导入功能
             bool  v_importglvouchersflag= v_importglvouchers.GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, v_vouchersfromexcel, Pubvar.gu8userdata.UserId,out v_importsuccessrows,out v_importfailurerows,out v_returnvouchers);
 
+        }
+
+        private void ReceiptNoteimport()
+        {
+            U8APILibClass v_importreceiptnotes = new U8APILibClass();
+            int v_importsuccessrows = 0, v_importfailurerows = 0;
+            String v_errmsg;
+            //根据采购入库单导入EXCEL模板将数据导入到dataset 中
+            DataSet v_receiptnotesfromexcel = new DataSet();
+            DataSet v_returnreceiptnotes = new DataSet();
+
+            //调用采购入库单导入功能
+            bool v_importreceiptnoteflag = v_importreceiptnotes.ReceiptNoteimport(Pubvar.gu8userdata, v_receiptnotesfromexcel, out v_importsuccessrows, out v_importfailurerows,out v_returnreceiptnotes, out v_errmsg);
+            MessageBox.Show(v_importreceiptnoteflag.ToString());
         }
 
     }
