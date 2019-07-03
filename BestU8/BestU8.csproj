@@ -37,6 +37,9 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
       <HintPath>C:\U8SOFT\Interop\ADODB.dll</HintPath>
     </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>dll\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
     <Reference Include="Interop.ADODB">
       <HintPath>dll\Interop.ADODB.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -52,8 +55,21 @@
       <HintPath>C:\U8SOFT\Interop\Interop.U8Login.dll</HintPath>
       <Aliases>interU8lg</Aliases>
     </Reference>
+    <Reference Include="NPOI">
+      <HintPath>dll\NPOI.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OOXML">
+      <HintPath>dll\NPOI.OOXML.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXml4Net">
+      <HintPath>dll\NPOI.OpenXml4Net.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXmlFormats">
+      <HintPath>dll\NPOI.OpenXmlFormats.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -96,6 +112,7 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="NPOIHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Pubvar.cs" />

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Data;
+using System.Data.OleDb;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -16,10 +17,26 @@ using UFIDA.U8.U8APIFramework.Meta;
 using UFIDA.U8.U8APIFramework.Parameter;
 using MSXML2;
 
+
+
 namespace BestU8
 {
+
     public partial class DataImport : Form
     {
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr _lopen(string lpPathName, int iReadWrite);
+
+        [DllImport("kernel32.dll")]
+        public static extern bool CloseHandle(IntPtr hObject);
+
+        public const int OF_READWRITE = 2;
+        public const int OF_SHARE_DENY_NONE = 0x40;
+        public readonly IntPtr HFILE_ERROR = new IntPtr(-1);
+
+
+
         public DataImport()
         {
             InitializeComponent();
@@ -29,21 +46,13 @@ namespace BestU8
 
         private void importdataopenfilebutton_Click(object sender, EventArgs e)
         {
-            //OpenFileDialog openFileDialog = new OpenFileDialog();
             importdataopenFileDialog.InitialDirectory = "c:\\";
-            importdataopenFileDialog.Filter = "Excel文件(*.xls)|*.xls|Excel文件(*.xlsx)|*.xlsx|所有文件(*.*)|*.*";
+            importdataopenFileDialog.Filter = "Excel文件(*.xlsx)|*.xlsx|Excel文件(*.xls)|*.xls|所有文件(*.*)|*.*";
             importdataopenFileDialog.RestoreDirectory = true;
             importdataopenFileDialog.FilterIndex = 1;
             if (importdataopenFileDialog.ShowDialog() == DialogResult.OK)
             {
                 importdatafiletextBox.Text = importdataopenFileDialog.FileName;
-                //读取文件内容
-                /*
-                File fileOpen = new File(fName);
-                isFileHaveName = true;
-                richTextBox1.Text = fileOpen.ReadFile();
-                richTextBox1.AppendText("");
-                */
             }
         }
 
@@ -54,30 +63,75 @@ namespace BestU8
 
         private void importdatabutton_Click(object sender, EventArgs e)
         {
+            DataSet dsexcel = new DataSet();
+            DataSet dstoexcel = new DataSet();
+            int importsuccessrows = 0, importfailurerows = 0;
+            ExcelHelper npoidata = new ExcelHelper(importdatafiletextBox.Text);
+            DataTable dtnpoidata = new DataTable();
+
+            //为防止用户多次点击导入按钮，将按钮禁用
+            importdatabutton.Enabled = false;
+            closebutton.Enabled = false;
+            this.ControlBox = false;
+
+            //判断数据模板EXCEL是否被用户打开
+            IntPtr vHandle = _lopen(importdatafiletextBox.Text, OF_READWRITE | OF_SHARE_DENY_NONE);
+            if (vHandle == HFILE_ERROR)
+            {
+                MessageBox.Show("请先关闭数据模板导入EXCEL文件！");
+                return;
+            }
+            CloseHandle(vHandle);
+
             //总账凭证导入
             if (Pubvar.gdataimporttype == "总账凭证导入")
             {
-                GLvouchersimp();
+                dtnpoidata = npoidata.ExcelToDataTable("GLVouchers", true, importdatafiletextBox.Text);
+                dtnpoidata.TableName = "GLVouchers";
+                dsexcel.Tables.Add(dtnpoidata);
+                //调用总账导入功能
+                bool v_importglvouchersflag = GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, dsexcel, Pubvar.gu8userdata.UserId, out importsuccessrows, out importfailurerows, out dstoexcel);
+                //导入结果回写EXCEL 
+                string f1 = System.IO.Path.GetFileNameWithoutExtension(importdatafiletextBox.Text);//文件名没有扩展名
+                string f2 = System.IO.Path.GetDirectoryName(importdatafiletextBox.Text);           //获取路径
+                string fe = System.IO.Path.GetExtension(importdatafiletextBox.Text);               //文件扩展名
+                string tempfile = f2 + "\\" + f1 + "_tmp" + fe;
+                npoidata.DataTableToExcel(dstoexcel.Tables["GLVouchers"], "GLVouchers", true, tempfile);
+                //如果存在则删除并将临时文件重命名
+                if (System.IO.File.Exists(importdatafiletextBox.Text))
+                {
+                    System.IO.File.Delete(importdatafiletextBox.Text);
+                }
+                System.IO.File.Move(tempfile, importdatafiletextBox.Text);
+                //执行结果回写memo text
+                importdataresulttextBox.AppendText("数据导入执行完毕。此次共计导入记录：" + (importsuccessrows + importfailurerows) + " 条 \n");
+                importdataresulttextBox.AppendText("其中导入成功：" + importsuccessrows + " 条 \n");
+                importdataresulttextBox.AppendText("其中导入失败：" + importfailurerows + " 条 \n");
+                importdataresulttextBox.AppendText("如果导入有出错，具体原因请看导入数据模板中错误信息列，请纠正后再次执行导入！\n" ) ;
             }
 
             //采购入库单导入
             if (Pubvar.gdataimporttype == "采购入库单导入")
             {
+                //dtnpoidata = npoidata.ExcelToDataTable("ReceiptNotes", true, importdatafiletextBox.Text);
+                dtnpoidata.TableName = "ReceiptNotes";
+                //dsexcel.Tables.Add(dtnpoidata); dtnpoidata = npoidata.ExcelToDataTable("ReceiptNotes", true, importdatafiletextBox.Text);
+                dtnpoidata.TableName = "ReceiptNotes";
+                dsexcel.Tables.Add(dtnpoidata);
+                //调用采购入库单导入功能
                 ReceiptNoteimp();
+                //导入结果回写EXCEL 
             }
+
+
+
+            //为防止用户多次点击导入按钮，将按钮禁用
+            importdatabutton.Enabled = true;
+            closebutton.Enabled = true;
+            this.ControlBox = true;
         }
 
-        private void GLvouchersimp()
-        {
-            int v_importsuccessrows = 0, v_importfailurerows = 0;
-            //根据总账导入EXCEL模板将数据导入到dataset 中
-            DataSet v_vouchersfromexcel = new DataSet();
-            DataSet v_returnvouchers = new DataSet();
 
-            //调用总账导入功能
-            bool v_importglvouchersflag = GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, v_vouchersfromexcel, Pubvar.gu8userdata.UserId, out v_importsuccessrows, out v_importfailurerows, out v_returnvouchers);
-            MessageBox.Show(v_importglvouchersflag.ToString());
-        }
 
         private void ReceiptNoteimp()
         {
@@ -98,10 +152,10 @@ namespace BestU8
             int v_importsuccessrows = 0, v_importfailurerows = 0;
             System.Object rsaffected = new System.Object();
             //创建或清除凭证导入临时表数据
+            #region
             interadodb::ADODB.Recordset rs = new interadodb::ADODB.Recordset();
             interadodb::ADODB.Connection conn = new interadodb::ADODB.Connection();
             conn.Open(dbconn);
-            //创建临时表，如已创建删除表内记录
             strSql = "SELECT count(*) FROM tempdb.dbo.sysobjects WHERE name = 'cus_gl_accvouchers'";
             rs = conn.Execute(strSql, out rsaffected, -1);
             if (Convert.ToInt16(rs.Fields[0].Value) > 0)
@@ -186,9 +240,9 @@ namespace BestU8
                 rs = conn.Execute(strSql, out rsaffected, -1);
 
             }
-
+            #endregion
             //临时表中插入总账凭证数据
-
+            /*
             //测试数据
             //借方
             strSql = "INSERT INTO tempdb.dbo.cus_gl_accvouchers(ioutperiod,coutsign ,cSign,coutno_id,cdigest,coutsysname,cbill,inid,ccode,cexch_name ,doutbilldate,bvouchedit,bvouchaddordele,bvouchmoneyhold,bvalueedit,bcodeedit,md) ";
@@ -198,7 +252,8 @@ namespace BestU8
             strSql = "INSERT INTO tempdb.dbo.cus_gl_accvouchers(ioutperiod,coutsign ,cSign,coutno_id,cdigest,coutsysname,cbill,inid,ccode,cexch_name ,doutbilldate,bvouchedit,bvouchaddordele,bvouchmoneyhold,bvalueedit,bcodeedit,mc) ";
             strSql = strSql + "VALUES(1, N'记', N'记', N'IMP0000001', N'测试后台导入总账凭证', N'GL', N'" + userid + "', 1, N'6711', N'人民币',  '2015-1-31', 1, 1, 1,1,1, 777)";
             rs = conn.Execute(strSql, out rsaffected, -1);
-            
+            */
+
 
             //调用API保存总账凭证
             CVoucher.CVInterface glcvoucher = new CVoucher.CVInterface();
@@ -206,23 +261,145 @@ namespace BestU8
             glcvoucher.strTempTable = strTempTable;
             glcvoucher.LoginByUserToken(usertoken);
             //根据dataset中导入数据分组循环导入U8系统
+            dsreturnvouchers = dsimportedvouchers.Clone();
+            DataTable dtdistinct = dsimportedvouchers.Tables["GLVouchers"].DefaultView.ToTable(true, new string[] { "凭证ID" });
+            string vougroupby = "";
 
+            //设置progressbar步长并显示百分比
+            importdataprogressBar.Minimum = 0;   // 设置进度条最小值.
+            importdataprogressBar.Value = 1;    // 设置进度条初始值
+            importdataprogressBar.Step = 1;     // 设置每次增加的步长
+            importdataprogressBar.Maximum = dtdistinct.Rows.Count;// 设置进度条最大值.
+            Graphics g = this.importdataprogressBar.CreateGraphics();
 
-            if (glcvoucher.SaveVoucher())
+            for (int i = 0; i < dtdistinct.Rows.Count; i++)
             {
-                v_importsuccessrows = v_importsuccessrows + 1;
-            }
-            else
-            {
-                v_importfailurerows = v_importfailurerows + 1;
-            }
 
+                vougroupby = dtdistinct.Rows[i]["凭证ID"].ToString();
+                string filterestr = "";
+                //filterestr = "凭证ID = " + "'" + vougroupby + "'" + "AND 凭证号 IS NULL AND (是否导入 = 'N' OR 是否导入 IS NULL)";
+                filterestr = "凭证ID = " + "'" + vougroupby + "'";
+                DataRow[] drgroupby = dsimportedvouchers.Tables["GLVouchers"].Select(filterestr);
+                if ((!string.IsNullOrEmpty(drgroupby[0]["凭证号"].ToString())) || ((!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString())) && (drgroupby[0]["是否导入"].ToString() == "N")))
+                {
+                    //复制已成功导入的数据到返回数据表中
+                    for (int k = 0; k < drgroupby.Count(); k++)
+                    {
+                        dsreturnvouchers.Tables["GLVouchers"].ImportRow(drgroupby[k]);
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        strSql = "INSERT INTO tempdb.dbo.cus_gl_accvouchers(ioutperiod,coutsign ,cSign,coutno_id,cdigest,coutsysname,cbill,inid,ccode,cexch_name ,doutbilldate,bvouchedit,bvouchaddordele,bvouchmoneyhold,bvalueedit,bcodeedit,md,mc,cdept_id,cperson_id,ccus_id,csup_id,citem_class,citem_id,cname) ";
+                        strSql = strSql + "VALUES(" + drgroupby[j]["会计期间"].ToString();
+                        strSql = strSql + ",'" + drgroupby[j]["凭证类别"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["凭证类别"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["凭证ID"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["摘要"].ToString();
+                        strSql = strSql + "','" + "GL";   //这里外部系统设置为总账，否则导入的凭证默认无法修改。
+                        strSql = strSql + "','" + userid;
+                        strSql = strSql + "'," + (j + 1).ToString();   //行号
+                        strSql = strSql + ",'" + drgroupby[j]["科目编码"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["币种名称"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["制单日期"].ToString();
+                        strSql = strSql + "'," + 1;  //bvouchedit
+                        strSql = strSql + "," + 1;   //bvouchaddordele
+                        strSql = strSql + "," + 1;   //bvouchmoneyhold
+                        strSql = strSql + "," + 1;   //bvalueedit,bcodeedit
+                        strSql = strSql + "," + 1;   //bcodeedit
+                        if (string.IsNullOrEmpty(drgroupby[j]["借方金额"].ToString()))
+                        {
+                            strSql = strSql + "," + 0;   //md
+                        }
+                        else
+                        {
+                            strSql = strSql + "," + drgroupby[j]["借方金额"].ToString();   //md
+                        }
+
+                        if (string.IsNullOrEmpty(drgroupby[j]["贷方金额"].ToString()))
+                        {
+                            strSql = strSql + "," + 0;   //mc
+                        }
+                        else
+                        {
+                            strSql = strSql + "," + drgroupby[j]["贷方金额"].ToString();   //mc
+                        }
+
+                        strSql = strSql + ",'" + drgroupby[j]["部门编码"].ToString();          //部门编码
+                        strSql = strSql + "','" + drgroupby[j]["职员编码"].ToString();          //职员编码
+                        strSql = strSql + "','" + drgroupby[j]["客户编码"].ToString();          //客户编码
+                        strSql = strSql + "','" + drgroupby[j]["供应商编码"].ToString();          //供应商编码
+                        strSql = strSql + "','" + drgroupby[j]["项目大类编码"].ToString();        //物料大类编码
+                        strSql = strSql + "','" + drgroupby[j]["项目编码"].ToString();            //物料编码
+                        strSql = strSql + "','" + drgroupby[j]["业务员"].ToString() + "')";         //业务员
+                        rs = conn.Execute(strSql, out rsaffected, -1);
+                    }
+                    //凭证导入U8中制单
+                    bool glsaveflag = glcvoucher.SaveVoucher();
+                    //回写凭证号及错误信息,一旦SaveVoucher执行完毕，数据库连接系统API自动关闭，需要再次打开
+                    conn.Open(dbconn);
+                    if (glsaveflag)
+                    {
+                        v_importsuccessrows = v_importsuccessrows + 1;
+
+                        int importedvoucherid;
+                        strSql = "SELECT distinct ino_id  FROM tempdb.dbo.cus_gl_accvouchers WHERE coutno_id ='" + vougroupby + "'";
+                        rs = conn.Execute(strSql, out rsaffected, -1);
+                        if (Convert.ToInt16(rs.Fields[0].Value) > 0)
+                        {
+                            importedvoucherid = Convert.ToInt16(rs.Fields[0].Value);
+                        }
+                        else
+                        {
+                            importedvoucherid = -1;
+                        }
+
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "Y";
+                            drgroupby[j]["错误信息"] = "";
+                            drgroupby[j]["凭证号"] = importedvoucherid;
+                            drgroupby[j]["制单人"] = userid;
+                        }
+
+                    }
+                    else
+                    {
+                        v_importfailurerows = v_importfailurerows + 1;
+                        //回写凭证号及错误信息
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "N";
+                            drgroupby[j]["错误信息"] = glcvoucher.strErrMessage;
+                        }
+                    }
+
+                    //删除导入接口表数据并关闭数据库连接
+                    strSql = "DELETE FROM tempdb.dbo.cus_gl_accvouchers ";
+                    rs = conn.Execute(strSql, out rsaffected, -1);
+
+                    //复制已导入数据到返回数据表中
+                    for (int k = 0; k < drgroupby.Count(); k++)
+                    {
+                        dsreturnvouchers.Tables["GLVouchers"].ImportRow(drgroupby[k]);
+                    }
+                }
+
+                //执行PerformStep()函数
+                importdataprogressBar.PerformStep();
+                string str = Math.Round((100 * (i + 1.0) / dtdistinct.Rows.Count), 2).ToString("#0.00 ") + "%";
+                Font font = new Font("Times New Roman", (float)10, FontStyle.Regular);
+                PointF pt = new PointF(this.importdataprogressBar.Width / 2 - 17, this.importdataprogressBar.Height / 2 - 7);
+                g.DrawString(str, font, Brushes.Blue, pt);
+
+            }
 
             //返回数据导入是否成功标志
             importsuccessrows = v_importsuccessrows;
             importfailurerows = v_importfailurerows;
-            dsreturnvouchers = dsimportedvouchers;
-
+            conn.Close();
             if (v_importfailurerows != 0)
             {
                 return false;
@@ -396,5 +573,24 @@ namespace BestU8
             return result;
         }
 
+
+        private string collect_Con(string szFileExtension, string szPath)
+        {
+            string v_connoledb="";
+            switch (szFileExtension.ToUpper())
+            {
+                case ".XLS":
+                    v_connoledb = @"Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + szPath + ";Extended Properties=\"Excel 8.0;HDR=YES;\"";
+                    break;
+                case ".XLSX":
+                    v_connoledb = @"Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + szPath + ";Extended Properties=\"Excel 12.0;HDR=YES;\"";
+                    break;
+                default:
+                    break;
+            }
+
+            return v_connoledb;
+
+        }
     }
 }
