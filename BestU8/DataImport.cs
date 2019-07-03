@@ -287,10 +287,17 @@ namespace BestU8
 
                 vougroupby = dtdistinct.Rows[i]["凭证ID"].ToString();
                 string filterestr = "";
-                //filterestr = "凭证ID = " + "'" + vougroupby + "'" + "AND 凭证号 IS NULL AND (是否导入 = 'N' OR 是否导入 IS NULL)";
-                filterestr = "凭证ID = " + "'" + vougroupby + "'";
+                //当凭证ID为空或""时的特殊处理
+                if (!string.IsNullOrEmpty(vougroupby))
+                {
+                    filterestr = "凭证ID = " + "'" + vougroupby + "'";
+                }
+                else
+                {
+                    filterestr = "凭证ID IS NULL  OR 凭证ID ='" + "'" ;
+                }
                 DataRow[] drgroupby = dsimportedvouchers.Tables["GLVouchers"].Select(filterestr);
-                if ((!string.IsNullOrEmpty(drgroupby[0]["凭证号"].ToString())) || ((!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString())) && (drgroupby[0]["是否导入"].ToString() == "N")))
+                if ((!string.IsNullOrEmpty(drgroupby[0]["凭证号"].ToString())) || ((!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString())) && (drgroupby[0]["是否导入"].ToString() == "N"))|| (string.IsNullOrEmpty(drgroupby[0]["凭证ID"].ToString())))
                 {
                     //复制已成功导入的数据到返回数据表中
                     for (int k = 0; k < drgroupby.Count(); k++)
