@@ -79,6 +79,10 @@ namespace BestU8
             if (vHandle == HFILE_ERROR)
             {
                 MessageBox.Show("请先关闭数据模板导入EXCEL文件！");
+                //启用导入按钮
+                importdatabutton.Enabled = true;
+                closebutton.Enabled = true;
+                this.ControlBox = true;
                 return;
             }
             CloseHandle(vHandle);
@@ -86,9 +90,12 @@ namespace BestU8
             //总账凭证导入
             if (Pubvar.gdataimporttype == "总账凭证导入")
             {
+                string impstart, impend;  
                 dtnpoidata = npoidata.ExcelToDataTable("GLVouchers", true, importdatafiletextBox.Text);
                 dtnpoidata.TableName = "GLVouchers";
                 dsexcel.Tables.Add(dtnpoidata);
+                impstart = DateTime.Now.ToLocalTime().ToString();
+                importdataresulttextBox.AppendText("数据导入执行开始:" + impstart + "\n");
                 //调用总账导入功能
                 bool v_importglvouchersflag = GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, dsexcel, Pubvar.gu8userdata.UserId, out importsuccessrows, out importfailurerows, out dstoexcel);
                 //导入结果回写EXCEL 
@@ -103,11 +110,14 @@ namespace BestU8
                     System.IO.File.Delete(importdatafiletextBox.Text);
                 }
                 System.IO.File.Move(tempfile, importdatafiletextBox.Text);
+
                 //执行结果回写memo text
+                impend = DateTime.Now.ToLocalTime().ToString();
                 importdataresulttextBox.AppendText("数据导入执行完毕。此次共计导入记录：" + (importsuccessrows + importfailurerows) + " 条 \n");
                 importdataresulttextBox.AppendText("其中导入成功：" + importsuccessrows + " 条 \n");
                 importdataresulttextBox.AppendText("其中导入失败：" + importfailurerows + " 条 \n");
                 importdataresulttextBox.AppendText("如果导入有出错，具体原因请看导入数据模板中错误信息列，请纠正后再次执行导入！\n" ) ;
+                importdataresulttextBox.AppendText("数据导入执行结束:" + impend + "  \n");
             }
 
             //采购入库单导入
@@ -338,14 +348,14 @@ namespace BestU8
                     }
                     //凭证导入U8中制单
                     bool glsaveflag = glcvoucher.SaveVoucher();
-                    //回写凭证号及错误信息,一旦SaveVoucher执行完毕，数据库连接系统API自动关闭，需要再次打开
-                    conn.Open(dbconn);
+                    //回写凭证号及错误信息,一旦SaveVoucher成功执行完毕，数据库连接系统API自动关闭，需要再次打开
+                    
                     if (glsaveflag)
                     {
                         v_importsuccessrows = v_importsuccessrows + 1;
-
                         int importedvoucherid;
                         strSql = "SELECT distinct ino_id  FROM tempdb.dbo.cus_gl_accvouchers WHERE coutno_id ='" + vougroupby + "'";
+                        conn.Open(dbconn);
                         rs = conn.Execute(strSql, out rsaffected, -1);
                         if (Convert.ToInt16(rs.Fields[0].Value) > 0)
                         {
