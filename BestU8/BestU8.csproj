@@ -142,6 +142,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="template\凭证V1.0.xlsx" />
+    <None Include="template\库存入库单V1.0.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\hideproduct_16x16.png" />
