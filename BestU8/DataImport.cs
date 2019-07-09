@@ -97,6 +97,7 @@ namespace BestU8
                 dsexcel.Tables.Add(dtnpoidata);
                 impstart = DateTime.Now.ToLocalTime().ToString();
                 importdataresulttextBox.AppendText("数据导入执行开始:" + impstart + "\n");
+                importdataresulttextBox.Refresh();
                 //调用总账导入功能
                 bool v_importglvouchersflag = GLvouchersimport(Pubvar.gu8LoginUI.userToken, Pubvar.gu8userdata.ConnString, dsexcel, Pubvar.gu8userdata.UserId, out importsuccessrows, out importfailurerows, out dstoexcel);
                 //导入结果回写EXCEL 
@@ -669,6 +670,30 @@ namespace BestU8
             conn.Open();//连接数据库  
             sqlcmd.Connection = conn;
 
+            //第一步：构造u8login对象并登陆(引用U8API类库中的Interop.U8Login.dll),如果当前环境中有login对象则可以省去第一步
+            interU8lg::U8Login.clsLogin u8Login = new interU8lg::U8Login.clsLogin();
+            String sSubId = u8userdata.cSubID;              // "AS";
+            String sAccID = u8userdata.AccID;               // "(default)@999"
+            String sYear = u8userdata.iYear;                 //"2014";
+            String sUserID = u8userdata.UserId;             //"demo";
+            String sPassword = u8userdata.Password;         // "";
+            String sDate = u8userdata.operDate;             //"2014-12-11";
+            String sServer = u8userdata.AppServer;          // "UF8125";
+            String sSerial = "";
+            if (!u8Login.Login(ref sSubId, ref sAccID, ref sYear, ref sUserID, ref sPassword, ref sDate, ref sServer, ref sSerial))
+            {
+                Marshal.FinalReleaseComObject(u8Login);
+                v_errmsg = "数据导入登陆失败，原因：" + u8Login.ShareString;
+                //返回数据导入是否成功标志
+                importsuccessrows = v_importsuccessrows;
+                importfailurerows = v_importfailurerows;
+                dsreturnreceiptnotes = dsimportedreceiptnotes;
+                errmsg = v_errmsg;
+                conn.Close();
+                return false;
+            }
+
+
             dsreturnreceiptnotes = dsimportedreceiptnotes.Clone();
             DataTable dtdistinct = dsimportedreceiptnotes.Tables["ReceiptNotes"].DefaultView.ToTable(true, new string[] { "单据ID" });
             string vougroupby = "";
@@ -683,28 +708,6 @@ namespace BestU8
             for (int i = 0; i < dtdistinct.Rows.Count; i++)   //分组开始 
             {
                 string v_receiptnotnumber = "";
-                //第一步：构造u8login对象并登陆(引用U8API类库中的Interop.U8Login.dll),如果当前环境中有login对象则可以省去第一步
-                interU8lg::U8Login.clsLogin u8Login = new interU8lg::U8Login.clsLogin();
-                String sSubId = u8userdata.cSubID;              // "AS";
-                String sAccID = u8userdata.AccID;               // "(default)@999"
-                String sYear = u8userdata.iYear;                 //"2014";
-                String sUserID = u8userdata.UserId;             //"demo";
-                String sPassword = u8userdata.Password;         // "";
-                String sDate = u8userdata.operDate;             //"2014-12-11";
-                String sServer = u8userdata.AppServer;          // "UF8125";
-                String sSerial = "";
-                if (!u8Login.Login(ref sSubId, ref sAccID, ref sYear, ref sUserID, ref sPassword, ref sDate, ref sServer, ref sSerial))
-                {
-                    Marshal.FinalReleaseComObject(u8Login);
-                    v_errmsg = "数据导入登陆失败，原因：" + u8Login.ShareString;
-                    //返回数据导入是否成功标志
-                    importsuccessrows = v_importsuccessrows;
-                    importfailurerows = v_importfailurerows;
-                    dsreturnreceiptnotes = dsimportedreceiptnotes;
-                    errmsg = v_errmsg;
-                    conn.Close();
-                    return false;
-                }
 
                 //第二步：构造环境上下文对象，传入login，并按需设置其它上下文参数
                 U8EnvContext envContext = new U8EnvContext();
@@ -781,33 +784,68 @@ namespace BestU8
                         //设置BO对象(表头)行数，只能为一行
                         
                         BusinessObject DomHead = broker.GetBoParam("DomHead");
-                        DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable();
+                        DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable(),rdcptcode = new DataTable();
                         DomHead.RowCount = 1;
 
                         sqlcmd.CommandText = "SELECT MAX(ID)+1 FROM dbo.RdRecord01 ";
                         apdata.SelectCommand = sqlcmd;
                         apdata.Fill(rdmainid);
-                        DomHead[0]["id"] = rdmainid.Rows[0][0].ToString();                  //"1000000404"; //主关键字段，int类型
-
+                        //入库单主表主关键ID "1000000404"
+                        DomHead[0]["id"] = rdmainid.Rows[0][0].ToString();                  
                         sqlcmd.CommandText = "SELECT RIGHT('0000000000' + CONVERT(VARCHAR(10), max(ccode) + 1),10) FROM dbo.RdRecord01 ";
                         apdata.SelectCommand = sqlcmd;
                         apdata.Fill(rdmaincode);
-
-                        DomHead[0]["ccode"] = rdmaincode.Rows[0][0].ToString();         //"testimp0006"; //入库单号，string类型
+                        //入库单编号
+                        DomHead[0]["ccode"] = rdmaincode.Rows[0][0].ToString();         
                         v_receiptnotnumber = rdmaincode.Rows[0][0].ToString();
-                        DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();      //"2015-01-12"; //入库日期，DateTime类型
-                        DomHead[0]["cbustype"] = drgroupby[0]["业务类型"].ToString();     //"普通采购"; //业务类型，int类型
-                        DomHead[0]["csource"] = drgroupby[0]["单据来源"].ToString();    //"库存"; //单据来源，int类型
-                        DomHead[0]["cmaker"] = u8userdata.UserId;                      //制单人，string类型      
-                        DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();      //汇率，double类型
-                        DomHead[0]["cexch_name"] = drgroupby[0]["币种"].ToString();     // "人民币"; //币种，string类型
-                        DomHead[0]["cvencode"] = drgroupby[0]["供应商编码"].ToString();       //"01002"; //供货单位编码，string类型
-                        DomHead[0]["cvouchtype"] = "01";                                      //单据类型，string类型 ，这里固定是 01- 采购入库单 
-                        DomHead[0]["cwhcode"] = drgroupby[0]["仓库编码"].ToString();          //"04";仓库编码，string类型
-                        //这里固定是收标志
-                        DomHead[0]["brdflag"] = "1";                                            //收发标志，int类型
-                        DomHead[0]["crdcode"] = drgroupby[0]["入库类别编码"].ToString();        //入库类别编码，string类型  采购入库
-                        DomHead[0]["cdepcode"] = drgroupby[0]["部门编码"].ToString();          // "0401"; //部门编码，string类型  采购部
+                        //入库日期"2015-01-12"
+                        DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();
+                        //制单人    
+                        DomHead[0]["cmaker"] = u8userdata.UserId;                      
+                        //供应商、部门、业务类型、单据来源编码、汇率、币种
+                        if (!string.IsNullOrEmpty(v_ponumber))
+                        {
+                            DomHead[0]["cvencode"] = poheadds.Tables[0].Rows[0]["cVenCode"].ToString();
+                            DomHead[0]["cdepcode"] = poheadds.Tables[0].Rows[0]["cDepCode"].ToString();
+                            DomHead[0]["cbustype"] = poheadds.Tables[0].Rows[0]["cBusType"].ToString();
+                            DomHead[0]["csource"] = "采购订单";  //委外订单
+                            DomHead[0]["iexchrate"] = poheadds.Tables[0].Rows[0]["nflat"].ToString();
+                            DomHead[0]["cexch_name"] = poheadds.Tables[0].Rows[0]["cexch_name"].ToString();
+                        }
+                        else
+                        {
+                            DomHead[0]["cvencode"] = drgroupby[0]["供应商编码"].ToString();
+                            DomHead[0]["cdepcode"] = drgroupby[0]["部门编码"].ToString();
+                            DomHead[0]["csource"] = drgroupby[0]["单据来源"].ToString(); //"库存";采购订单，委外订单
+                            DomHead[0]["cbustype"] = drgroupby[0]["业务类型"].ToString(); //"普通采购";委外加工
+                            DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();      
+                            DomHead[0]["cexch_name"] = drgroupby[0]["币种"].ToString();
+                        }
+                        //单据类型这里固定是 01- 采购入库单
+                        DomHead[0]["cvouchtype"] = "01";
+                        ///仓库编码
+                        DomHead[0]["cwhcode"] = drgroupby[0]["仓库编码"].ToString();
+                        ////收发标志这里固定是收标志
+                        DomHead[0]["brdflag"] = "1";
+                        //采购及入库类别编码
+                        if (!string.IsNullOrEmpty(v_ponumber))
+                        {
+                            sqlcmd.CommandText = "SELECT a.cPTName,a.cRdCode,b.cRdName  FROM dbo.PurchaseType AS a inner join dbo.Rd_Style AS b on a.cRdCode = b.cRdCode WHERE a.cPTCode='" + poheadds.Tables[0].Rows[0]["cPTCode"].ToString() + "'";
+                            apdata.SelectCommand = sqlcmd;
+                            apdata.Fill(rdcptcode);
+                            DomHead[0]["cptcode"] = poheadds.Tables[0].Rows[0]["cPTCode"].ToString();
+                            DomHead[0]["crdcode"] = rdcptcode.Rows[0]["cRdCode"].ToString();
+                            DomHead[0]["cptname"] = rdcptcode.Rows[0]["cPTName"].ToString();
+                            DomHead[0]["crdname"] = rdcptcode.Rows[0]["cRdName"].ToString();
+                        }
+                        else
+                        {
+                            DomHead[0]["cptcode"] = "";
+                            DomHead[0]["crdcode"] = rdcptcode.Rows[0]["cRdCode"].ToString();
+                            DomHead[0]["cptname"] = rdcptcode.Rows[0]["cPTName"].ToString();
+                            DomHead[0]["crdname"] = rdcptcode.Rows[0]["cRdName"].ToString();
+                        }
+
                         if (!string.IsNullOrEmpty(v_ponumber))
                         {
                             DomHead[0]["cordercode"] = v_ponumber;                                       //订单号，string类型
