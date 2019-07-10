@@ -782,26 +782,26 @@ namespace BestU8
                         //API单据值赋值
                         #region 
                         //设置BO对象(表头)行数，只能为一行
-                        
+
                         BusinessObject DomHead = broker.GetBoParam("DomHead");
-                        DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable(),rdcptcode = new DataTable();
+                        DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable(), rdcptcode = new DataTable();
                         DomHead.RowCount = 1;
 
                         sqlcmd.CommandText = "SELECT MAX(ID)+1 FROM dbo.RdRecord01 ";
                         apdata.SelectCommand = sqlcmd;
                         apdata.Fill(rdmainid);
                         //入库单主表主关键ID "1000000404"
-                        DomHead[0]["id"] = rdmainid.Rows[0][0].ToString();                  
+                        DomHead[0]["id"] = rdmainid.Rows[0][0].ToString();
                         sqlcmd.CommandText = "SELECT RIGHT('0000000000' + CONVERT(VARCHAR(10), max(ccode) + 1),10) FROM dbo.RdRecord01 ";
                         apdata.SelectCommand = sqlcmd;
                         apdata.Fill(rdmaincode);
                         //入库单编号
-                        DomHead[0]["ccode"] = rdmaincode.Rows[0][0].ToString();         
+                        DomHead[0]["ccode"] = rdmaincode.Rows[0][0].ToString();
                         v_receiptnotnumber = rdmaincode.Rows[0][0].ToString();
                         //入库日期"2015-01-12"
                         DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();
                         //制单人    
-                        DomHead[0]["cmaker"] = u8userdata.UserId;                      
+                        DomHead[0]["cmaker"] = u8userdata.UserId;
                         //供应商、部门、业务类型、单据来源编码、汇率、币种
                         if (!string.IsNullOrEmpty(v_ponumber))
                         {
@@ -818,7 +818,7 @@ namespace BestU8
                             DomHead[0]["cdepcode"] = drgroupby[0]["部门编码"].ToString();
                             DomHead[0]["csource"] = drgroupby[0]["单据来源"].ToString(); //"库存";采购订单，委外订单
                             DomHead[0]["cbustype"] = drgroupby[0]["业务类型"].ToString(); //"普通采购";委外加工
-                            DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();      
+                            DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();
                             DomHead[0]["cexch_name"] = drgroupby[0]["币种"].ToString();
                         }
                         //单据类型这里固定是 01- 采购入库单
@@ -1074,6 +1074,540 @@ namespace BestU8
                 return true;
             }
             /*****************************************************************************/
+        }
+
+
+        public bool ReceiptNoteimport01(UFSoft.U8.Framework.LoginContext.UserData u8userdata, DataSet dsimportedreceiptnotes, out int importsuccessrows, out int importfailurerows, out DataSet dsreturnreceiptnotes, out string errmsg)
+        {
+            int v_importsuccessrows = 0, v_importfailurerows = 0;
+            string v_errmsg = "", v_groupby = "", v_receiptnotnumber = "",v_filterestr = "",v_bustype = "",v_source="", v_cinvcode = "";
+            bool v_exitflag = false;
+            DataRow[] drgroupby, drorderlines;
+            DataTable dtsql = new DataTable();
+            DataSet orderhead = new DataSet(), orderlines = new DataSet(),dssql=new DataSet();
+            interU8lg::U8Login.clsLogin u8Login;
+
+            //构建导入事务数据库连接，复制导入数据集
+            #region
+            SqlConnection conn = new SqlConnection();
+            SqlDataAdapter apdata = new SqlDataAdapter();
+            SqlCommand sqlcmd = new SqlCommand();
+            int pos = u8userdata.ConnString.IndexOf(";");
+            conn.ConnectionString = u8userdata.ConnString.Remove(0, pos + 1);
+            conn.Open();//连接数据库  
+            sqlcmd.Connection = conn;
+            dsreturnreceiptnotes = dsimportedreceiptnotes.Clone();
+            #endregion
+            //第一步：构造u8login对象并登陆(引用U8API类库中的Interop.U8Login.dll),如果当前环境中有login对象则可以省去第一步
+            #region
+            try
+            {
+                u8Login = new interU8lg::U8Login.clsLogin();
+                String sSubId = u8userdata.cSubID;              // "AS";
+                String sAccID = u8userdata.AccID;               // "(default)@999"
+                String sYear = u8userdata.iYear;                 //"2014";
+                String sUserID = u8userdata.UserId;             //"demo";
+                String sPassword = u8userdata.Password;         // "";
+                String sDate = u8userdata.operDate;             //"2014-12-11";
+                String sServer = u8userdata.AppServer;          // "UF8125";
+                String sSerial = "";
+                if (!u8Login.Login(ref sSubId, ref sAccID, ref sYear, ref sUserID, ref sPassword, ref sDate, ref sServer, ref sSerial))
+                {
+                    Marshal.FinalReleaseComObject(u8Login);
+                    v_errmsg = "数据导入登陆失败，原因：" + u8Login.ShareString;
+                    //返回数据导入是否成功标志
+                    importsuccessrows = v_importsuccessrows;
+                    importfailurerows = v_importfailurerows;
+                    dsreturnreceiptnotes = dsimportedreceiptnotes;
+                    errmsg = v_errmsg;
+                    conn.Close();
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                v_errmsg = "数据导入登陆失败，原因：" + ex.Message;
+                //返回数据导入是否成功标志
+                importsuccessrows = v_importsuccessrows;
+                importfailurerows = v_importfailurerows;
+                dsreturnreceiptnotes = dsimportedreceiptnotes;
+                errmsg = v_errmsg;
+                conn.Close();
+                return false;
+            }
+            #endregion
+            //按照采购入库单导入数据模板，根据订单号进行分组，默认无订单号为一组.
+            DataTable dtdistinct = dsimportedreceiptnotes.Tables["ReceiptNotes"].DefaultView.ToTable(true, new string[] { "订单号" });
+            //进度条初始化
+            #region
+            //设置progressbar步长并显示百分比
+            importdataprogressBar.Minimum = 0;                              // 设置进度条最小值.
+            importdataprogressBar.Value = 0;                                // 设置进度条初始值
+            importdataprogressBar.Step = 1;                                 // 设置每次增加的步长
+            importdataprogressBar.Maximum = dtdistinct.Rows.Count - 1;        // 设置进度条最大值.
+            Graphics g = this.importdataprogressBar.CreateGraphics();
+            #endregion
+            //调用 U8 API ：单据及参数赋值并根据DataTable中分组数据循环导入U8系统.
+            #region
+            for (int i = 0; i < dtdistinct.Rows.Count; i++)   
+            {
+                //第二步：构造环境上下文对象，传入login，并按需设置其它上下文参数
+                U8EnvContext envContext = new U8EnvContext();
+                envContext.U8Login = u8Login;
+                //第三步：设置API地址标识(Url)- 采购入库单： U8API / PuStoreIn / Add
+                U8ApiAddress BestU8ApiAddress = new U8ApiAddress("U8API/PuStoreIn/Add");
+                //第四步：构造APIBroker
+                U8ApiBroker broker = new U8ApiBroker(BestU8ApiAddress, envContext);
+                //按照分组标识数据获取导入数据模板该组数组值
+                v_groupby = dtdistinct.Rows[i]["订单号"].ToString();
+                if (!string.IsNullOrEmpty(v_groupby))
+                {
+                    v_filterestr = "订单号 = " + "'" + v_groupby + "'";
+                }
+                else
+                {
+                    v_filterestr = "订单号 IS NULL  OR 订单号 ='" + "'";
+                }
+                drgroupby = dsimportedreceiptnotes.Tables["ReceiptNotes"].Select(v_filterestr);
+                //执行导入模板数据初步校验 
+                //1.针对已导入数据即“单据号”列不为空或“是否导入”列不为空，或“错误信息"列不为空则直接复制到返回datatable中，不参加数据导入API调用
+                #region
+                if ((!string.IsNullOrEmpty(drgroupby[0]["单据号"].ToString()))||(!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString()))|| (!string.IsNullOrEmpty(drgroupby[0]["错误信息"].ToString())))
+                {
+                    //复制已导入的数据到返回数据表中
+                    for (int k = 0; k < drgroupby.Count(); k++)
+                    {
+                        dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                    }
+                    continue;
+                }
+                #endregion
+                //2.有订单号则单据来源必须为"采购订单"或"委外订单"，业务类型为普通采购或委外加工，无订单号则来源为"库存"。业务类型为普通采购。
+                #region
+                if (!string.IsNullOrEmpty(v_groupby))
+                {
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        v_bustype = drgroupby[j]["业务类型"].ToString();
+                        v_source  = drgroupby[j]["单据来源"].ToString();
+                        if ((v_bustype != "普通采购") || (v_bustype != "委外加工"))
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                        if ((v_source != "采购订单") || (v_source != "委外订单"))
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                    }
+                    if (v_exitflag)
+                    {
+                        v_importfailurerows = v_importfailurerows + 1;
+                        //回写错误信息
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "N";
+                            drgroupby[j]["错误信息"] = "单据来源或业务类型错误，请检查!";
+                        }
+                        //复制已导入的数据到返回数据表中
+                        for (int k = 0; k < drgroupby.Count(); k++)
+                        {
+                            dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                        }
+                        continue;
+                    }
+                }
+                else
+                {
+                    v_filterestr = "订单号 IS NULL  OR 订单号 ='" + "'";
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        v_bustype = drgroupby[j]["业务类型"].ToString();
+                        v_source = drgroupby[j]["单据来源"].ToString();
+                        if (v_bustype != "普通采购") 
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                        if (v_source != "仓库")
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                    }
+                    if (v_exitflag)
+                    {
+                        v_importfailurerows = v_importfailurerows + 1;
+                        //回写错误信息
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "N";
+                            drgroupby[j]["错误信息"] = "单据来源或业务类型错误，请检查!";
+                        }
+                        //复制已导入的数据到返回数据表中
+                        for (int k = 0; k < drgroupby.Count(); k++)
+                        {
+                            dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                        }
+                        continue;
+                    }
+                }
+
+                #endregion
+                //3.导入数据中item是否存在PO中
+                #region
+                if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
+                {
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        v_cinvcode = drgroupby[j]["存货编码"].ToString();
+                        sqlcmd.CommandText = "SELECT b.cInvCode FROM dbo.PO_Pomain as a inner join dbo.PO_Podetails as b on a.POID = b.POID where a.cPOID = '" + v_groupby + "'  AND b.cInvCode = '" + v_cinvcode +"'" ;
+                        apdata.SelectCommand = sqlcmd;
+                        orderlines.Reset();
+                        apdata.Fill(orderlines);
+                        if (orderlines.Tables[0].Rows.Count==0)
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                    }
+                    if (v_exitflag)
+                    {
+                        v_importfailurerows = v_importfailurerows + 1;
+                        //回写错误信息
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "N";
+                            drgroupby[j]["错误信息"] = "采购订单中不存在需要导入的存货编码，请检查!";
+                        }
+                        //复制已导入的数据到返回数据表中
+                        for (int k = 0; k < drgroupby.Count(); k++)
+                        {
+                            dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                        }
+                        continue;
+                    }
+                }
+
+                if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "委外加工"))
+                {
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        v_cinvcode = drgroupby[j]["存货编码"].ToString();
+                        sqlcmd.CommandText = "SELECT b.cInvCode FROM dbo.PO_Pomain as a inner join dbo.PO_Podetails as b on a.POID = b.POID where a.cCode = '" + v_groupby + "'  AND b.cInvCode = '" + v_cinvcode + "'";
+                        apdata.SelectCommand = sqlcmd;
+                        orderlines.Reset();
+                        apdata.Fill(orderlines);
+                        if (orderlines.Tables[0].Rows.Count == 0)
+                        {
+                            v_exitflag = true;
+                            break;
+                        }
+                    }
+                    if (v_exitflag)
+                    {
+                        v_importfailurerows = v_importfailurerows + 1;
+                        //回写错误信息
+                        for (int j = 0; j < drgroupby.Count(); j++)
+                        {
+                            drgroupby[j]["是否导入"] = "N";
+                            drgroupby[j]["错误信息"] = "委外订单中不存在需要导入的存货编码，请检查!";
+                        }
+                        //复制已导入的数据到返回数据表中
+                        for (int k = 0; k < drgroupby.Count(); k++)
+                        {
+                            dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                        }
+                        continue;
+                    }
+                }
+                #endregion
+                //执行API单据赋值及参数赋值.
+                #region
+                if ((!string.IsNullOrEmpty(v_groupby))&&(drgroupby[0]["业务类型"].ToString() == "普通采购"))
+                {
+                    //获取采购订单头及订单行信息
+                    sqlcmd.CommandText = "SELECT * FROM dbo.PO_Pomain WHERE cPOID ='" + v_groupby + "'";
+                    apdata.SelectCommand = sqlcmd;
+                    orderhead.Reset();
+                    apdata.Fill(orderhead);
+                    sqlcmd.CommandText = "SELECT * FROM dbo.PO_Podetails WHERE POID =" + orderhead.Tables[0].Rows[0]["POID"].ToString();
+                    apdata.SelectCommand = sqlcmd;
+                    orderlines.Reset();
+                    apdata.Fill(orderlines);
+                }
+
+                if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "委外加工"))
+                {
+                    //获取采购订单头及订单行信息
+                    sqlcmd.CommandText = "SELECT * FROM dbo.OM_MOMain WHERE cCode ='" + v_groupby + "'";
+                    apdata.SelectCommand = sqlcmd;
+                    orderhead.Reset();
+                    apdata.Fill(orderhead);
+                    sqlcmd.CommandText = "SELECT * FROM dbo.OM_MODetails  WHERE MOID =" + orderhead.Tables[0].Rows[0]["MOID"].ToString();
+                    apdata.SelectCommand = sqlcmd;
+                    orderlines.Reset();
+                    apdata.Fill(orderlines);
+                }
+                //设置BO对象(表头)行数，只能为一行
+                BusinessObject DomHead = broker.GetBoParam("DomHead");
+                //DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable(), rdcptcode = new DataTable();
+                DomHead.RowCount = 1;
+                sqlcmd.CommandText = "SELECT MAX(ID)+1 FROM dbo.RdRecord01 ";
+                apdata.SelectCommand = sqlcmd;
+                dssql.Reset();
+                apdata.Fill(dssql);
+                dtsql.Reset();
+                dtsql = dssql.Tables[0];
+                DomHead[0]["id"] = dtsql.Rows[0][0].ToString();                 //入库单主表主关键ID 
+
+                sqlcmd.CommandText = "SELECT RIGHT('0000000000' + CONVERT(VARCHAR(10), max(ccode) + 1),10) FROM dbo.RdRecord01 ";
+                apdata.SelectCommand = sqlcmd;
+                dssql.Reset();
+                apdata.Fill(dssql);
+                dtsql.Reset();
+                dtsql = dssql.Tables[0];
+                v_receiptnotnumber = dtsql.Rows[0][0].ToString();  
+                DomHead[0]["ccode"] = v_receiptnotnumber;                       //入库单编号
+                DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();      //入库日期"2015-01-12"
+                DomHead[0]["cmaker"] = u8userdata.UserId;                       //制单人
+
+                if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
+                {
+                    DomHead[0]["cvencode"]  = orderhead.Tables[0].Rows[0]["cVenCode"].ToString();                   //供应商编号
+                    DomHead[0]["cdepcode"]  = orderhead.Tables[0].Rows[0]["cDepCode"].ToString();                   //部门编号
+                    DomHead[0]["cbustype"]  = orderhead.Tables[0].Rows[0]["cBusType"].ToString();                   //业务类型
+                    DomHead[0]["csource"]   = "采购订单";                                                           //单据来源                                               
+                    DomHead[0]["iexchrate"] = orderhead.Tables[0].Rows[0]["nflat"].ToString();                      //汇率
+                    DomHead[0]["cexch_name"] = orderhead.Tables[0].Rows[0]["cexch_name"].ToString();                //币种
+                    DomHead[0]["ipurorderid"] = orderhead.Tables[0].Rows[0]["POID"].ToString();                     //采购订单ID
+                }
+                if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "委外加工"))
+                {
+                    DomHead[0]["cvencode"] = orderhead.Tables[0].Rows[0]["cVenCode"].ToString();                    
+                    DomHead[0]["cdepcode"] = orderhead.Tables[0].Rows[0]["cDepCode"].ToString();
+                    DomHead[0]["cbustype"] = orderhead.Tables[0].Rows[0]["cBusType"].ToString();
+                    DomHead[0]["csource"] = "委外订单";
+                    DomHead[0]["iexchrate"] = orderhead.Tables[0].Rows[0]["nflat"].ToString();
+                    DomHead[0]["cexch_name"] = orderhead.Tables[0].Rows[0]["cexch_name"].ToString();
+                    DomHead[0]["ipurorderid"] = orderhead.Tables[0].Rows[0]["MOID"].ToString();                     //委外订单ID
+                }
+                // 无订单号为参照则视作库存直接收货
+                if ((string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
+                {
+                    DomHead[0]["cvencode"] = drgroupby[0]["供应商编码"].ToString();
+                    DomHead[0]["cdepcode"] = drgroupby[0]["部门编码"].ToString();
+                    DomHead[0]["csource"] = drgroupby[0]["单据来源"].ToString();            //"库存"
+                    DomHead[0]["cbustype"] = drgroupby[0]["业务类型"].ToString();           //"普通采购"
+                    DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();
+                    DomHead[0]["cexch_name"] = drgroupby[0]["币种"].ToString();
+                }
+                
+                DomHead[0]["cvouchtype"] = "01";                                                                    //单据类型这里固定是 01- 采购入库单
+                DomHead[0]["cwhcode"] = drgroupby[0]["仓库编码"].ToString();                                        //仓库编码
+                DomHead[0]["brdflag"] = "1";                                                                        //收发标志这里固定是收标志
+                
+                if (!string.IsNullOrEmpty(v_groupby))                                                               //采购类型及入库类别编码
+                {
+                    sqlcmd.CommandText = "SELECT a.cPTName,a.cRdCode,b.cRdName  FROM dbo.PurchaseType AS a inner join dbo.Rd_Style AS b on a.cRdCode = b.cRdCode WHERE a.cPTCode='" + orderhead.Tables[0].Rows[0]["cPTCode"].ToString() + "'";
+                    apdata.SelectCommand = sqlcmd;
+                    dssql.Reset();
+                    apdata.Fill(dssql);
+                    dtsql.Reset();
+                    dtsql = dssql.Tables[0];
+                    DomHead[0]["cptcode"] = orderhead.Tables[0].Rows[0]["cPTCode"].ToString();
+                    DomHead[0]["crdcode"] = dtsql.Rows[0]["cRdCode"].ToString();
+                    DomHead[0]["cordercode"] = v_groupby;                                                           //订单号
+                    DomHead[0]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();                    //税率
+                    
+                }
+                else
+                {
+                    DomHead[0]["cptcode"] = drgroupby[0]["采购类型编码"].ToString();
+                    DomHead[0]["crdcode"] = drgroupby[0]["入库类别编码"].ToString();
+                }
+                //设置BO对象(表体)行数，只能为一行
+                BusinessObject domBody = broker.GetBoParam("domBody");
+                domBody.RowCount = 10;
+                sqlcmd.CommandText = "SELECT MAX(autoid) FROM dbo.rdrecords01 ";
+                apdata.SelectCommand = sqlcmd;
+                dssql.Reset();
+                apdata.Fill(dssql);
+                dtsql.Reset();
+                dtsql = dssql.Tables[0];
+                Int32 v_linesidmax = Convert.ToInt32(dtsql.Rows[0][0]);
+                for (int j = 0; j < drgroupby.Count(); j++)
+                {
+                    domBody[j]["autoid"] = v_linesidmax + 1;                                    //入库单子表主关键字段
+                    domBody[j]["id"] = DomHead[0]["id"].ToString();                             //入库单主表主关键字段
+                    domBody[j]["cinvcode"] = drgroupby[j]["存货编码"].ToString();               //存货编码
+                    domBody[j]["iquantity"] = drgroupby[j]["入库数量"].ToString();              //入库数量
+                    domBody[j]["editprop"] = "A";                                               //编辑属性：A表新增，M表修改，D表删除
+                    domBody[j]["irowno"] = j + 1;                                               //行号
+                    if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
+                    {
+                        v_filterestr = " cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        drorderlines = orderlines.Tables[0].Select(v_filterestr);
+                        domBody[j]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        //税率
+                        domBody[j]["ioritaxcost"] = drorderlines[0]["iTaxPrice"].ToString();                //原币含税单价
+                        domBody[j]["ioricost"] = drorderlines[0]["iUnitPrice"].ToString();                  //原币单价
+                        domBody[j]["iorimoney"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]), 2).ToString();       //原币金额
+                        domBody[j]["ioritaxprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]) * Convert.ToDouble(orderhead.Tables[0].Rows[0]["itaxrate"]) / 100.00, 2).ToString();   //原币税额
+                        domBody[j]["iorisum"] = (Convert.ToDouble(domBody[0]["iorimoney"]) + Convert.ToDouble(domBody[0]["ioritaxprice"])).ToString();      //原币价税合计
+                        domBody[j]["iunitcost"] = drorderlines[0]["iNatUnitPrice"].ToString();              //本币无税单价
+                        domBody[j]["iprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();       //本币金额
+                        domBody[j]["iaprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();         //暂估金额
+                        domBody[j]["facost"] = drorderlines[0]["iNatUnitPrice"].ToString();                 //暂估单价
+                        domBody[j]["inquantity"] = drorderlines[0]["iQuantity"].ToString();                 //应收数量
+                        domBody[j]["itaxprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]) * Convert.ToDouble(orderhead.Tables[0].Rows[0]["itaxrate"]) / 100.00, 2).ToString(); ; //本币税额
+                        domBody[j]["isum"] = (Convert.ToDouble(domBody[j]["iprice"]) + Convert.ToDouble(domBody[j]["itaxprice"])).ToString();  //本币价税合计
+                        domBody[j]["cpoid"] = v_groupby;                                                  //订单号，string类型
+                        domBody[j]["iposid"] = drorderlines[0]["id"].ToString();                           //订单子表ID
+                    }
+
+                    if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "委外加工"))
+                    {
+                        v_filterestr = " cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        drorderlines = orderlines.Tables[0].Select(v_filterestr);
+                        domBody[j]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        //税率
+                        domBody[j]["ioritaxcost"] = drorderlines[0]["iTaxPrice"].ToString();                //原币含税单价
+                        domBody[j]["ioricost"] = drorderlines[0]["iUnitPrice"].ToString();                  //原币单价
+                        domBody[j]["iorimoney"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]), 2).ToString();       //原币金额
+                        domBody[j]["ioritaxprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]) * Convert.ToDouble(orderhead.Tables[0].Rows[0]["itaxrate"]) / 100.00, 2).ToString();   //原币税额
+                        domBody[j]["iorisum"] = (Convert.ToDouble(domBody[0]["iorimoney"]) + Convert.ToDouble(domBody[0]["ioritaxprice"])).ToString();      //原币价税合计
+                        domBody[j]["iunitcost"] = drorderlines[0]["iNatUnitPrice"].ToString();              //本币无税单价
+                        domBody[j]["iprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();       //本币金额
+                        domBody[j]["iaprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();         //暂估金额
+                        domBody[j]["facost"] = drorderlines[0]["iNatUnitPrice"].ToString();                 //暂估单价
+                        domBody[j]["inquantity"] = drorderlines[0]["iQuantity"].ToString();                 //应收数量
+                        domBody[j]["itaxprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]) * Convert.ToDouble(orderhead.Tables[0].Rows[0]["itaxrate"]) / 100.00, 2).ToString(); ; //本币税额
+                        domBody[j]["isum"] = (Convert.ToDouble(domBody[j]["iprice"]) + Convert.ToDouble(domBody[j]["itaxprice"])).ToString();  //本币价税合计
+                        domBody[j]["cpoid"] = v_groupby;                                                  //订单号，string类型
+                        domBody[0]["iomodid"] = drorderlines[0]["MODetailsID"].ToString();                  //委外订单子表ID，int类型
+                    }
+                }
+                //API 通用参数赋值
+                //给普通参数sVouchType赋值。此参数的数据类型为System.String，此参数按值传递，表示单据类型：01
+                broker.AssignNormalValue("sVouchType", Convert.ToString("01"));
+                //给普通参数domPosition赋值。此参数的数据类型为System.Object，此参数按引用传递，表示货位：传空
+                broker.AssignNormalValue("domPosition", null); //broker.AssignNormalValue("domPosition", new System.Object());
+                //该参数errMsg为OUT型参数，由于其数据类型为System.String，为值类型，因此不必传入参数变量。在API调用返回时，可以通过GetResult("errMsg")获取其值
+                //给普通参数cnnFrom赋值。此参数的数据类型为ADODB.Connection，此参数按引用传递，表示连接对象,如果由调用方控制事务，则需要设置此连接对象，否则传空
+                broker.AssignNormalValue("cnnFrom", null); //broker.AssignNormalValue("cnnFrom", new ADODB.Connection());
+                //该参数VouchId为INOUT型普通参数。此参数的数据类型为System.String，此参数按值传递。在API调用返回时，可以通过GetResult("VouchId")获取其值
+                broker.AssignNormalValue("VouchId", Convert.ToString(""));
+                //该参数domMsg为OUT型参数，由于其数据类型为MSXML2.IXMLDOMDocument2，非一般值类型，因此必须传入一个参数变量。在API调用返回时，可以直接使用该参数.
+                //无法直接创建接口实例，需要做类型转换 。//MSXML2.IXMLDOMDocument2 domMsg = new MSXML2.IXMLDOMDocument2();
+                MSXML2.DOMDocumentClass domMsg = new MSXML2.DOMDocumentClass();
+                broker.AssignNormalValue("domMsg", (IXMLDOMDocument2)domMsg);
+                //给普通参数bCheck赋值。此参数的数据类型为System.Boolean，此参数按值传递，表示是否控制可用量。
+                broker.AssignNormalValue("bCheck", false);
+                //给普通参数bBeforCheckStock赋值。此参数的数据类型为System.Boolean，此参数按值传递，表示检查可用量
+                broker.AssignNormalValue("bBeforCheckStock", false);
+                //给普通参数bIsRedVouch赋值。此参数的数据类型为System.Boolean，此参数按值传递，表示是否红字单据
+                broker.AssignNormalValue("bIsRedVouch", false);
+                //给普通参数sAddedState赋值。此参数的数据类型为System.String，此参数按值传递，表示传空字符串
+                broker.AssignNormalValue("sAddedState", Convert.ToString(""));
+                //给普通参数bReMote赋值。此参数的数据类型为System.Boolean，此参数按值传递，表示是否远程：传入false
+                broker.AssignNormalValue("bReMote", false);
+                #endregion
+                //第六步：调用API
+                #region
+                if (!broker.Invoke())
+                {
+                    //错误处理
+                    Exception apiEx = broker.GetException();
+                    if (apiEx != null)
+                    {
+                        if (apiEx is MomSysException)
+                        {
+                            MomSysException sysEx = apiEx as MomSysException;
+                            v_errmsg = "系统异常：" + sysEx.Message + "\n\r";
+
+                        }
+                        else if (apiEx is MomBizException)
+                        {
+                            MomBizException bizEx = apiEx as MomBizException;
+                            v_errmsg = "API异常：" + bizEx.Message + "\n\r";
+
+                        }
+                        //异常原因
+                        String exReason = broker.GetExceptionString();
+                        if (exReason.Length != 0)
+                        {
+                            v_errmsg = "其他异常原因：" + exReason + "\n\r";
+                        }
+                    }
+                }
+                #endregion
+                //第七步：获取返回结果
+                #region
+                //获取普通返回值。此返回值数据类型为System.Boolean，此参数按值传递，表示返回值:true:成功,false:失败
+                System.Boolean result = Convert.ToBoolean(broker.GetReturnValue());
+                //获取out/inout参数值
+                //获取普通OUT参数errMsg。此返回值数据类型为System.String，在使用该参数之前，请判断是否为空
+                v_errmsg = (System.String)broker.GetResult("errMsg");
+                //获取普通INOUT参数VouchId。此返回值数据类型为System.String，在使用该参数之前，请判断是否为空
+                System.String v_vouchid = (System.String)broker.GetResult("VouchId");
+                //获取普通OUT参数domMsg。此返回值数据类型为MSXML2.IXMLDOMDocument2，在使用该参数之前，请判断是否为空
+                //MSXML2.IXMLDOMDocument2 domMsgRet = (MSXML2.DOMDocument)(broker.GetResult("domMsg"));
+                //BusinessObject vdomBody = broker.GetBoParam("domBody");
+                //BusinessObject vdomHead = broker.GetBoParam("DomHead");
+                #endregion
+                //第八步 ： 结束本次调用，释放API资源
+                #region
+                broker.Release();
+                if (result)
+                {
+                    v_importsuccessrows = v_importsuccessrows + 1;
+                    //回写信息
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        drgroupby[j]["是否导入"] = "Y";
+                        drgroupby[j]["错误信息"] = "";
+                        drgroupby[j]["单据号"] = v_receiptnotnumber;
+                    }
+                }
+                else
+                {
+                    v_importfailurerows = v_importfailurerows + 1;
+                    //回写错误信息
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        drgroupby[j]["是否导入"] = "N";
+                        drgroupby[j]["错误信息"] = v_errmsg;
+                    }
+                }
+
+                //复制已导入的数据到返回数据表中
+                for (int k = 0; k < drgroupby.Count(); k++)
+                {
+                    dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                }
+                #endregion
+
+                //执行进度条：PerformStep()函数
+                importdataprogressBar.PerformStep();
+                string str = Math.Round((100 * (i + 1.0) / dtdistinct.Rows.Count), 2).ToString("#0.00 ") + "%";
+                Font font = new Font("Times New Roman", (float)10, FontStyle.Regular);
+                PointF pt = new PointF(this.importdataprogressBar.Width / 2 - 17, this.importdataprogressBar.Height / 2 - 7);
+                g.DrawString(str, font, Brushes.Blue, pt);
+
+            }
+            #endregion
+            //结束本次数据导入调用,返回数据导入是否成功标志,
+            Marshal.FinalReleaseComObject(u8Login);
+            importsuccessrows = v_importsuccessrows;
+            importfailurerows = v_importfailurerows;
+            dsreturnreceiptnotes = dsimportedreceiptnotes;
+            errmsg = v_errmsg;
+            conn.Close();
+            if (v_importfailurerows != 0)
+                return false;
+            else
+                return true;
+
         }
     }
 }
