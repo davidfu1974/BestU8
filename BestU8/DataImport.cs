@@ -1137,7 +1137,7 @@ namespace BestU8
                 return false;
             }
             #endregion
-            //按照采购入库单导入数据模板，根据订单号进行分组，默认无订单号为一组.
+            //按照采购入库单导入数据模板，根据订单号、单据日期进行分组，基于采购管理业务参数必有订单选项限制，这里不考虑订单号为空的情况.
             DataTable dtdistinct = dsimportedreceiptnotes.Tables["ReceiptNotes"].DefaultView.ToTable(true, new string[] { "订单号", "单据日期" });
             //进度条初始化
             #region
@@ -1172,9 +1172,28 @@ namespace BestU8
                 }
                 drgroupby = dsimportedreceiptnotes.Tables["ReceiptNotes"].Select(v_filterestr);
                 //执行导入模板数据初步校验 
-                //1.针对已导入数据即“单据号”列不为空或“是否导入”列不为空，或“错误信息"列不为空则直接复制到返回datatable中，不参加数据导入API调用
+                //1.订单号不能为空
                 #region
-                if ((!string.IsNullOrEmpty(drgroupby[0]["单据号"].ToString()))||(!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString()))|| (!string.IsNullOrEmpty(drgroupby[0]["错误信息"].ToString())))
+                if (string.IsNullOrEmpty(v_groupby))
+                {
+                    v_importfailurerows = v_importfailurerows + 1;
+                    //回写错误信息
+                    for (int j = 0; j < drgroupby.Count(); j++)
+                    {
+                        drgroupby[j]["是否导入"] = "N";
+                        drgroupby[j]["错误信息"] = "订单号不能为空，请检查!";
+                    }
+                    //复制已导入的数据到返回数据表中
+                    for (int k = 0; k < drgroupby.Count(); k++)
+                    {
+                        dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
+                    }
+                    continue;
+                }
+                #endregion
+                //2.针对已导入数据即“单据号”列不为空或“是否导入”列不为空，或“错误信息"列不为空则直接复制到返回datatable中，不参加数据导入API调用
+                #region
+                if ((!string.IsNullOrEmpty(drgroupby[0]["单据号"].ToString())) || (!string.IsNullOrEmpty(drgroupby[0]["是否导入"].ToString())) || (!string.IsNullOrEmpty(drgroupby[0]["错误信息"].ToString())))
                 {
                     //复制已导入的数据到返回数据表中
                     for (int k = 0; k < drgroupby.Count(); k++)
@@ -1184,7 +1203,7 @@ namespace BestU8
                     continue;
                 }
                 #endregion
-                //2.有订单号则单据来源必须为"采购订单"或"委外订单"，业务类型为普通采购或委外加工，无订单号则来源为"库存"。业务类型为普通采购。
+                //3.有订单号则单据来源必须为"采购订单"或"委外订单"，业务类型为普通采购或委外加工。
                 #region
                 if (!string.IsNullOrEmpty(v_groupby))
                 {
@@ -1220,44 +1239,9 @@ namespace BestU8
                         continue;
                     }
                 }
-                else
-                {
-                    v_filterestr = "订单号 IS NULL  OR 订单号 ='" + "'";
-                    for (int j = 0; j < drgroupby.Count(); j++)
-                    {
-                        v_bustype = drgroupby[j]["业务类型"].ToString();
-                        v_source = drgroupby[j]["单据来源"].ToString();
-                        if (v_bustype != "普通采购") 
-                        {
-                            v_exitflag = true;
-                            break;
-                        }
-                        if (v_source != "库存")
-                        {
-                            v_exitflag = true;
-                            break;
-                        }
-                    }
-                    if (v_exitflag)
-                    {
-                        v_importfailurerows = v_importfailurerows + 1;
-                        //回写错误信息
-                        for (int j = 0; j < drgroupby.Count(); j++)
-                        {
-                            drgroupby[j]["是否导入"] = "N";
-                            drgroupby[j]["错误信息"] = "单据来源或业务类型错误，请检查!";
-                        }
-                        //复制已导入的数据到返回数据表中
-                        for (int k = 0; k < drgroupby.Count(); k++)
-                        {
-                            dsreturnreceiptnotes.Tables["ReceiptNotes"].ImportRow(drgroupby[k]);
-                        }
-                        continue;
-                    }
-                }
 
                 #endregion
-                //3.导入数据中item是否存在PO中
+                //4.导入数据中item是否存在PO中
                 #region
                 if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
                 {
@@ -1394,17 +1378,7 @@ namespace BestU8
                     DomHead[0]["cexch_name"] = orderhead.Tables[0].Rows[0]["cexch_name"].ToString();
                     DomHead[0]["ipurorderid"] = orderhead.Tables[0].Rows[0]["MOID"].ToString();                     //委外订单ID
                 }
-                // 无订单号为参照则视作库存直接收货
-                if ((string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
-                {
-                    DomHead[0]["cvencode"] = drgroupby[0]["供应商编码"].ToString();
-                    DomHead[0]["cdepcode"] = drgroupby[0]["部门编码"].ToString();
-                    DomHead[0]["csource"] = drgroupby[0]["单据来源"].ToString();            //"库存"
-                    DomHead[0]["cbustype"] = drgroupby[0]["业务类型"].ToString();           //"普通采购"
-                    DomHead[0]["iexchrate"] = drgroupby[0]["汇率"].ToString();
-                    DomHead[0]["cexch_name"] = drgroupby[0]["币种"].ToString();
-                }
-                
+
                 DomHead[0]["cvouchtype"] = "01";                                                                    //单据类型这里固定是 01- 采购入库单
                 DomHead[0]["cwhcode"] = drgroupby[0]["仓库编码"].ToString();                                        //仓库编码
                 DomHead[0]["brdflag"] = "1";                                                                        //收发标志这里固定是收标志
@@ -1422,11 +1396,6 @@ namespace BestU8
                     DomHead[0]["cordercode"] = v_groupby;                                                           //订单号
                     DomHead[0]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();                    //税率
                     
-                }
-                else
-                {
-                    DomHead[0]["cptcode"] = drgroupby[0]["采购类型编码"].ToString();
-                    DomHead[0]["crdcode"] = drgroupby[0]["入库类别编码"].ToString();
                 }
                 //设置BO对象(表体)行数，只能为一行
                 BusinessObject domBody = broker.GetBoParam("domBody");
@@ -1560,8 +1529,6 @@ namespace BestU8
                             domBody[0]["citemcname"] = dtsql.Rows[0]["citem_name"].ToString();                      //项目大类名称，string类型
                         }
                     }
-
-
 
                 }
                 //API 通用参数赋值
