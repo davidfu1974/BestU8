@@ -120,6 +120,7 @@ namespace BestU8
                 importdataresulttextBox.AppendText("其中导入失败：" + importfailurerows + " 条 \n");
                 importdataresulttextBox.AppendText("如果导入有出错，具体原因请看导入数据模板中错误信息列，请纠正后再次执行导入！\n");
                 importdataresulttextBox.AppendText("数据导入执行结束:" + impend + "  \n");
+                importdataresulttextBox.Refresh();
             }
             #endregion
 
@@ -1080,7 +1081,7 @@ namespace BestU8
         public bool ReceiptNoteimport(UFSoft.U8.Framework.LoginContext.UserData u8userdata, DataSet dsimportedreceiptnotes, out int importsuccessrows, out int importfailurerows, out DataSet dsreturnreceiptnotes, out string errmsg)
         {
             int v_importsuccessrows = 0, v_importfailurerows = 0;
-            string v_errmsg = "", v_groupby = "", v_receiptnotnumber = "",v_filterestr = "",v_bustype = "",v_source="", v_cinvcode = "";
+            string v_errmsg = "", v_groupby = "", v_receiptnotnumber = "",v_filterestr = "",v_bustype = "",v_source="", v_cinvcode = "",v_receiptnotedate="";
             bool v_exitflag = false;
             DataRow[] drgroupby, drorderlines;
             DataTable dtsql = new DataTable();
@@ -1137,14 +1138,14 @@ namespace BestU8
             }
             #endregion
             //按照采购入库单导入数据模板，根据订单号进行分组，默认无订单号为一组.
-            DataTable dtdistinct = dsimportedreceiptnotes.Tables["ReceiptNotes"].DefaultView.ToTable(true, new string[] { "订单号" });
+            DataTable dtdistinct = dsimportedreceiptnotes.Tables["ReceiptNotes"].DefaultView.ToTable(true, new string[] { "订单号", "单据日期" });
             //进度条初始化
             #region
             //设置progressbar步长并显示百分比
             importdataprogressBar.Minimum = 0;                              // 设置进度条最小值.
-            importdataprogressBar.Value = 0;                                // 设置进度条初始值
+            importdataprogressBar.Value = 1;                                // 设置进度条初始值
             importdataprogressBar.Step = 1;                                 // 设置每次增加的步长
-            importdataprogressBar.Maximum = dtdistinct.Rows.Count - 1;        // 设置进度条最大值.
+            importdataprogressBar.Maximum = dtdistinct.Rows.Count;        // 设置进度条最大值.
             Graphics g = this.importdataprogressBar.CreateGraphics();
             #endregion
             //调用 U8 API ：单据及参数赋值并根据DataTable中分组数据循环导入U8系统.
@@ -1160,13 +1161,14 @@ namespace BestU8
                 U8ApiBroker broker = new U8ApiBroker(BestU8ApiAddress, envContext);
                 //按照分组标识数据获取导入数据模板该组数组值
                 v_groupby = dtdistinct.Rows[i]["订单号"].ToString();
+                v_receiptnotedate = dtdistinct.Rows[i]["单据日期"].ToString();
                 if (!string.IsNullOrEmpty(v_groupby))
                 {
-                    v_filterestr = "订单号 = " + "'" + v_groupby + "'";
+                    v_filterestr = "订单号 = " + "'" + v_groupby + "' AND 单据日期 = '" + v_receiptnotedate + "'";
                 }
                 else
                 {
-                    v_filterestr = "订单号 IS NULL  OR 订单号 ='" + "'";
+                    v_filterestr = "(订单号 IS NULL  OR 订单号 ='" + "') AND 单据日期 = '" + v_receiptnotedate + "'";
                 }
                 drgroupby = dsimportedreceiptnotes.Tables["ReceiptNotes"].Select(v_filterestr);
                 //执行导入模板数据初步校验 
@@ -1190,12 +1192,12 @@ namespace BestU8
                     {
                         v_bustype = drgroupby[j]["业务类型"].ToString();
                         v_source  = drgroupby[j]["单据来源"].ToString();
-                        if ((v_bustype != "普通采购") || (v_bustype != "委外加工"))
+                        if ((v_bustype != "普通采购") && (v_bustype != "委外加工"))
                         {
                             v_exitflag = true;
                             break;
                         }
-                        if ((v_source != "采购订单") || (v_source != "委外订单"))
+                        if ((v_source != "采购订单") && (v_source != "委外订单"))
                         {
                             v_exitflag = true;
                             break;
@@ -1230,7 +1232,7 @@ namespace BestU8
                             v_exitflag = true;
                             break;
                         }
-                        if (v_source != "仓库")
+                        if (v_source != "库存")
                         {
                             v_exitflag = true;
                             break;
@@ -1295,7 +1297,7 @@ namespace BestU8
                     for (int j = 0; j < drgroupby.Count(); j++)
                     {
                         v_cinvcode = drgroupby[j]["存货编码"].ToString();
-                        sqlcmd.CommandText = "SELECT b.cInvCode FROM dbo.PO_Pomain as a inner join dbo.PO_Podetails as b on a.POID = b.POID where a.cCode = '" + v_groupby + "'  AND b.cInvCode = '" + v_cinvcode + "'";
+                        sqlcmd.CommandText = "SELECT b.cInvCode FROM dbo.OM_MOMain as a inner join dbo.OM_MODetails as b on  a.MOID = b.MOID where a.cCode = '" + v_groupby + "'  AND b.cInvCode = '" + v_cinvcode + "'";
                         apdata.SelectCommand = sqlcmd;
                         orderlines.Reset();
                         apdata.Fill(orderlines);
@@ -1352,7 +1354,6 @@ namespace BestU8
                 }
                 //设置BO对象(表头)行数，只能为一行
                 BusinessObject DomHead = broker.GetBoParam("DomHead");
-                //DataTable rdmainid = new DataTable(), rdmaincode = new DataTable(), rdlineid = new DataTable(), rdcptcode = new DataTable();
                 DomHead.RowCount = 1;
                 sqlcmd.CommandText = "SELECT MAX(ID)+1 FROM dbo.RdRecord01 ";
                 apdata.SelectCommand = sqlcmd;
@@ -1370,7 +1371,7 @@ namespace BestU8
                 dtsql = dssql.Tables[0];
                 v_receiptnotnumber = dtsql.Rows[0][0].ToString();  
                 DomHead[0]["ccode"] = v_receiptnotnumber;                       //入库单编号
-                DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();      //入库日期"2015-01-12"
+                DomHead[0]["ddate"] = drgroupby[0]["单据日期"].ToString();      //入库日期
                 DomHead[0]["cmaker"] = u8userdata.UserId;                       //制单人
 
                 if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "普通采购"))
@@ -1464,13 +1465,51 @@ namespace BestU8
                         domBody[j]["isum"] = (Convert.ToDouble(domBody[j]["iprice"]) + Convert.ToDouble(domBody[j]["itaxprice"])).ToString();  //本币价税合计
                         domBody[j]["cpoid"] = v_groupby;                                                  //订单号，string类型
                         domBody[j]["iposid"] = drorderlines[0]["id"].ToString();                           //订单子表ID
+                        if (!string.IsNullOrEmpty(drgroupby[j]["入库件数"].ToString()))
+                        {
+                            domBody[0]["inum"] = drgroupby[j]["入库件数"].ToString();                                //入库件数
+                            domBody[0]["iinvexchrate"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) / Convert.ToDouble(drgroupby[j]["入库件数"]), 4).ToString();  //换算率
+                        }
+                        domBody[0]["innum"] = "0.00";                                                           //应收件数
+                        //获取入库物料信息：库存单位及是否批次控制
+                        sqlcmd.CommandText = "SELECT bInvBatch,cSTComUnitCode FROM dbo.Inventory WHERE cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        apdata.SelectCommand = sqlcmd;
+                        dssql.Reset();
+                        apdata.Fill(dssql);
+                        dtsql.Reset();
+                        dtsql = dssql.Tables[0];
+                        domBody[0]["cassunit"] = dtsql.Rows[0]["cSTComUnitCode"].ToString();                    //库存单位码，string类型
+                        if (Convert.ToInt16(dtsql.Rows[0]["bInvBatch"]) == 1)
+                        {
+                            domBody[0]["cbatch"] = "001";                                                       //批号
+                        }
+
+                        if (!string.IsNullOrEmpty(drorderlines[0]["citemcode"].ToString()))
+                        {
+                            domBody[0]["citemcode"] = drorderlines[0]["citemcode"].ToString();                      //项目编码
+                            domBody[0]["cname"] = drorderlines[0]["citemname"].ToString();                          //项目名称
+                        }
+                        if (!string.IsNullOrEmpty(drorderlines[0]["citem_class"].ToString()))
+                        {
+                            domBody[0]["citem_class"] = drorderlines[0]["citem_class"].ToString();                  //项目大类编码
+                            //获取项目大类名称
+                            sqlcmd.CommandText = "SELECT citem_name FROM fitem WHERE citem_class ='" + drorderlines[0]["citem_class"].ToString() + "'";
+                            apdata.SelectCommand = sqlcmd;
+                            dssql.Reset();
+                            apdata.Fill(dssql);
+                            dtsql.Reset();
+                            dtsql = dssql.Tables[0];
+                            domBody[0]["citemcname"] = dtsql.Rows[0]["citem_name"].ToString();                      //项目大类名称，string类型
+                        }
+
                     }
 
                     if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["业务类型"].ToString() == "委外加工"))
                     {
                         v_filterestr = " cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
                         drorderlines = orderlines.Tables[0].Select(v_filterestr);
-                        domBody[j]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        //税率
+                        /*
+                        
                         domBody[j]["ioritaxcost"] = drorderlines[0]["iTaxPrice"].ToString();                //原币含税单价
                         domBody[j]["ioricost"] = drorderlines[0]["iUnitPrice"].ToString();                  //原币单价
                         domBody[j]["iorimoney"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]), 2).ToString();       //原币金额
@@ -1480,12 +1519,50 @@ namespace BestU8
                         domBody[j]["iprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();       //本币金额
                         domBody[j]["iaprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]), 2).ToString();         //暂估金额
                         domBody[j]["facost"] = drorderlines[0]["iNatUnitPrice"].ToString();                 //暂估单价
-                        domBody[j]["inquantity"] = drorderlines[0]["iQuantity"].ToString();                 //应收数量
                         domBody[j]["itaxprice"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iNatUnitPrice"]) * Convert.ToDouble(orderhead.Tables[0].Rows[0]["itaxrate"]) / 100.00, 2).ToString(); ; //本币税额
                         domBody[j]["isum"] = (Convert.ToDouble(domBody[j]["iprice"]) + Convert.ToDouble(domBody[j]["itaxprice"])).ToString();  //本币价税合计
-                        domBody[j]["cpoid"] = v_groupby;                                                  //订单号，string类型
+                        */
+                        domBody[j]["itaxrate"] = 0.00;                                                      //税率 orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        
+                        domBody[j]["cpoid"] = v_groupby;                                                    //订单号，string类型
                         domBody[0]["iomodid"] = drorderlines[0]["MODetailsID"].ToString();                  //委外订单子表ID，int类型
+                        domBody[j]["inquantity"] = drorderlines[0]["iQuantity"].ToString();                 //应收数量
+                        domBody[0]["iprocesscost"] = drorderlines[0]["iUnitPrice"].ToString();              //加工费单价
+                        domBody[0]["iprocessfee"] = Math.Round(Convert.ToDouble(drgroupby[j]["入库数量"]) * Convert.ToDouble(drorderlines[0]["iUnitPrice"]), 2).ToString();       //加工费
+
+
+                        //获取入库物料信息：是否批次控制
+                        sqlcmd.CommandText = "SELECT bInvBatch FROM dbo.Inventory WHERE cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        apdata.SelectCommand = sqlcmd;
+                        dssql.Reset();
+                        apdata.Fill(dssql);
+                        dtsql.Reset();
+                        dtsql = dssql.Tables[0];
+                        if (Convert.ToInt16(dtsql.Rows[0]["bInvBatch"]) == 1)
+                        {
+                            domBody[0]["cbatch"] = "001";                                                       //批号
+                        }
+
+                        if (!string.IsNullOrEmpty(drorderlines[0]["citemcode"].ToString()))
+                        {
+                            domBody[0]["citemcode"] = drorderlines[0]["citemcode"].ToString();                      //项目编码
+                            domBody[0]["cname"] = drorderlines[0]["citemname"].ToString();                          //项目名称
+                        }
+                        if (!string.IsNullOrEmpty(drorderlines[0]["citem_class"].ToString()))
+                        {
+                            domBody[0]["citem_class"] = drorderlines[0]["citem_class"].ToString();                  //项目大类编码
+                            //获取项目大类名称
+                            sqlcmd.CommandText = "SELECT citem_name FROM fitem WHERE citem_class ='" + drorderlines[0]["citem_class"].ToString() + "'";
+                            apdata.SelectCommand = sqlcmd;
+                            dssql.Reset();
+                            apdata.Fill(dssql);
+                            dtsql.Reset();
+                            dtsql = dssql.Tables[0];
+                            domBody[0]["citemcname"] = dtsql.Rows[0]["citem_name"].ToString();                      //项目大类名称，string类型
+                        }
                     }
+
+
+
                 }
                 //API 通用参数赋值
                 //给普通参数sVouchType赋值。此参数的数据类型为System.String，此参数按值传递，表示单据类型：01
