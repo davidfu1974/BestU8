@@ -135,6 +135,10 @@ namespace BestU8
                 importdataresulttextBox.AppendText("其中导入成功：" + importsuccessrows + " 条 \n");
                 importdataresulttextBox.AppendText("其中导入失败：" + importfailurerows + " 条 \n");
                 importdataresulttextBox.AppendText("如果导入有出错，具体原因请看导入数据模板中错误信息列，请纠正后再次执行导入！\n");
+                if ((!v_importreceiptnoteflag) && (!string.IsNullOrEmpty(v_errmsg)))
+                {
+                    importdataresulttextBox.AppendText("系统调用出错："+ v_errmsg + "\n");
+                }
                 importdataresulttextBox.AppendText("数据导入执行结束:" + impend + "  \n");
                 importdataresulttextBox.Refresh();
             }
@@ -1085,7 +1089,7 @@ namespace BestU8
             importsuccessrows = v_importsuccessrows;
             importfailurerows = v_importfailurerows;
             dsreturnreceiptnotes = dsimportedreceiptnotes;
-            errmsg = v_errmsg;
+            errmsg = "";
             conn.Close();
             if (v_importfailurerows != 0)
                 return false;
