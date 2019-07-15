@@ -864,9 +864,10 @@ namespace BestU8
                     domBody[j]["iquantity"] = drgroupby[j]["入库数量"].ToString();              //入库数量
                     domBody[j]["editprop"] = "A";                                               //编辑属性：A表新增，M表修改，D表删除
                     domBody[j]["irowno"] = j + 1;                                               //行号
+                    
                     if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["单据来源"].ToString() == "采购订单"))
                     {
-                        v_filterestr = " cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        v_filterestr = " cInvCode = '" + domBody[j]["cinvcode"] + "'";
                         drorderlines = orderlines.Tables[0].Select(v_filterestr);
                         domBody[j]["itaxrate"] = orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        //税率
                         domBody[j]["ioritaxcost"] = drorderlines[0]["iTaxPrice"].ToString();                //原币含税单价
@@ -890,7 +891,7 @@ namespace BestU8
                         }
                         domBody[0]["innum"] = "0.00";                                                           //应收件数
                         //获取入库物料信息：库存单位及是否批次控制
-                        sqlcmd.CommandText = "SELECT bInvBatch,cSTComUnitCode FROM dbo.Inventory WHERE cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        sqlcmd.CommandText = "SELECT bInvBatch,cSTComUnitCode FROM dbo.Inventory WHERE cInvCode = '" + domBody[j]["cinvcode"] + "'";
                         apdata.SelectCommand = sqlcmd;
                         dssql.Reset();
                         apdata.Fill(dssql);
@@ -924,7 +925,7 @@ namespace BestU8
 
                     if ((!string.IsNullOrEmpty(v_groupby)) && (drgroupby[0]["单据来源"].ToString() == "委外订单"))
                     {
-                        v_filterestr = " cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        v_filterestr = " cInvCode = '" + domBody[j]["cinvcode"] + "'";
                         drorderlines = orderlines.Tables[0].Select(v_filterestr);
                         domBody[j]["itaxrate"] = 0.00;                                                      //税率 orderhead.Tables[0].Rows[0]["itaxrate"].ToString();        
                         domBody[j]["cpoid"] = v_groupby;                                                    //订单号，string类型
@@ -941,7 +942,7 @@ namespace BestU8
                         domBody[0]["innum"] = "0.00";
 
                         //获取入库物料信息：是否批次控制
-                        sqlcmd.CommandText = "SELECT bInvBatch FROM dbo.Inventory WHERE cInvCode = '" + drgroupby[j]["存货编码"].ToString() + "'";
+                        sqlcmd.CommandText = "SELECT bInvBatch FROM dbo.Inventory WHERE cInvCode = '" + domBody[j]["cinvcode"] + "'";
                         apdata.SelectCommand = sqlcmd;
                         dssql.Reset();
                         apdata.Fill(dssql);
