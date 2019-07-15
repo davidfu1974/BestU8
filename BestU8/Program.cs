@@ -17,7 +17,6 @@ namespace BestU8
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new MainForm());
 
             //显示U8门户登陆界面,处理用户登陆信息
             UFSoft.U8.Framework.Login.UI.clsLogin u8LoginUI = new UFSoft.U8.Framework.Login.UI.clsLogin();

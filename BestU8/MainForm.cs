@@ -50,9 +50,6 @@ namespace BestU8
             U8tabCtl.Visible = false;
             U8dataimporttabPage.Parent = null;
 
-
-
-
         }
 
         private void u8toolBox_ItemSelectionChanged(ToolBoxItem sender, EventArgs e)
@@ -107,41 +104,21 @@ namespace BestU8
             //从这个类里可以获取登陆信息、数据库连接信息等等
             UFSoft.U8.Framework.LoginContext.UserData u8userdata = new UFSoft.U8.Framework.LoginContext.UserData();
             u8userdata = u8LoginUI.GetLoginInfo();
-            /*
-            //构建u8Login并执行登陆
-            U8Login.clsLogin u8Login = new U8Login.clsLogin();
-            String sSubId = u8userdata.cSubID;              // "AS";
-            String sAccID = u8userdata.AccID;               // "(default)@999"
-            String sYear = u8userdata.iYear;                 //"2014";
-            String sUserID = u8userdata.UserId;             //"demo";
-            String sPassword = u8userdata.Password;         // "";
-            String sDate = u8userdata.operDate;             //"2014-12-11";
-            String sServer = u8userdata.AppServer;          // "UF8125";
-            String sSerial = "";                            //u8userdata.AppServerSerial;
-            if (!u8Login.Login(ref sSubId, ref sAccID, ref sYear, ref sUserID, ref sPassword, ref sDate, ref sServer, ref sSerial))
-            {
-                MessageBox.Show("登陆失败，原因：" + u8Login.ShareString);
-                Marshal.FinalReleaseComObject(u8Login);
-                return;
-            }
-            else  // 显示操作主界面并保存登陆信息
-            {
-                Pubvar.gu8LoginUI = u8LoginUI;
-                Pubvar.gu8Login = u8Login;
-                Pubvar.gu8userdata = u8userdata;
-                Pubvar.gdataimporttype = "";
-                //隐藏tab control 及标签页
-                U8tabCtl.Visible = false;
-                U8dataimporttabPage.Parent = null;
-                //填写状态栏信息
-                toolStripStatusLabel.Text = "已登陆";
-                toolStripStatususeridtext.Text = Pubvar.gu8userdata.UserId;
-                toolStripStatuscompanytext.Text = "[" + Pubvar.gu8userdata.AccID + "]" + Pubvar.gu8userdata.AccName;
-                toolStripStatusoperationdatetext.Text = Pubvar.gu8userdata.operDate;
-                //将重登录之前选中的菜单项置为未选中状态
-                u8toolBox.SelectedTab.SelectedItem.Selected = false;
-            }
-            */
+
+            Pubvar.gu8LoginUI = u8LoginUI;
+            Pubvar.gu8userdata = u8userdata;
+            Pubvar.gdataimporttype = "";
+
+            //填写状态栏信息
+            toolStripStatusLabel.Text = "已登陆";
+            toolStripStatususeridtext.Text = Pubvar.gu8userdata.UserId;
+            toolStripStatuscompanytext.Text = "[" + Pubvar.gu8userdata.AccID + "]" + Pubvar.gu8userdata.AccName;
+            toolStripStatusoperationdatetext.Text = Pubvar.gu8userdata.operDate;
+
+            //隐藏tab control 及标签页
+            U8tabCtl.Visible = false;
+            U8dataimporttabPage.Parent = null;
+
         }
 
         private void exitMenuItem_Click(object sender, EventArgs e)

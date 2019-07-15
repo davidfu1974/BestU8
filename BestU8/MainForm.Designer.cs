@@ -48,20 +48,17 @@
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.u8toolBox = new Silver.UI.ToolBox();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.U8tabCtl = new System.Windows.Forms.TabControl();
             this.U8dataimporttabPage = new System.Windows.Forms.TabPage();
-            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
-            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.GLdataimportBT = new System.Windows.Forms.Button();
-            this.receiptnoteBT = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.receiptnoteBT = new System.Windows.Forms.Button();
+            this.GLdataimportBT = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.MainmenuStrip.SuspendLayout();
             this.formstatusStrip.SuspendLayout();
-            this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -93,14 +90,14 @@
             // reloginMenuItem
             // 
             this.reloginMenuItem.Name = "reloginMenuItem";
-            this.reloginMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.reloginMenuItem.Size = new System.Drawing.Size(124, 22);
             this.reloginMenuItem.Text = "重新登陆";
             this.reloginMenuItem.Click += new System.EventHandler(this.reloginMenuItem_Click);
             // 
             // exitMenuItem
             // 
             this.exitMenuItem.Name = "exitMenuItem";
-            this.exitMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitMenuItem.Size = new System.Drawing.Size(124, 22);
             this.exitMenuItem.Text = "退出系统";
             this.exitMenuItem.Click += new System.EventHandler(this.exitMenuItem_Click);
             // 
@@ -194,9 +191,6 @@
             // 
             // toolStrip1
             // 
-            this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripButton1,
-            this.toolStripButton3});
             this.toolStrip1.Location = new System.Drawing.Point(0, 25);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(1152, 25);
@@ -223,6 +217,7 @@
             // 
             // u8toolBox
             // 
+            this.u8toolBox.AllowDrop = true;
             this.u8toolBox.AllowSwappingByDragDrop = false;
             this.u8toolBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.u8toolBox.InitialScrollDelay = 500;
@@ -257,6 +252,15 @@
             this.u8toolBox.ItemSelectionChanged += new Silver.UI.ItemSelectionChangedHandler(this.u8toolBox_ItemSelectionChanged);
             this.u8toolBox.ItemMouseDown += new Silver.UI.ItemMouseEventHandler(this.u8toolBox_ItemMouseDown);
             // 
+            // imageList1
+            // 
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "hideproduct_16x16.png");
+            this.imageList1.Images.SetKeyName(1, "contentarrangeinrows_16x161.png");
+            this.imageList1.Images.SetKeyName(2, "addnewdatasource_16x16.png");
+            this.imageList1.Images.SetKeyName(3, "highlightactiveelements_16x16.png");
+            // 
             // U8tabCtl
             // 
             this.U8tabCtl.Controls.Add(this.U8dataimporttabPage);
@@ -286,70 +290,23 @@
             this.U8dataimporttabPage.TabIndex = 0;
             this.U8dataimporttabPage.Text = "U8数据导入";
             // 
-            // imageList1
+            // groupBox2
             // 
-            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
-            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
-            this.imageList1.Images.SetKeyName(0, "hideproduct_16x16.png");
-            this.imageList1.Images.SetKeyName(1, "contentarrangeinrows_16x161.png");
-            this.imageList1.Images.SetKeyName(2, "addnewdatasource_16x16.png");
-            this.imageList1.Images.SetKeyName(3, "highlightactiveelements_16x16.png");
+            this.groupBox2.Location = new System.Drawing.Point(338, 54);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(200, 2);
+            this.groupBox2.TabIndex = 5;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "groupBox2";
             // 
-            // toolStripButton1
+            // groupBox1
             // 
-            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(23, 22);
-            this.toolStripButton1.Text = "toolStripButton1";
-            // 
-            // toolStripButton3
-            // 
-            this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
-            this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton3.Name = "toolStripButton3";
-            this.toolStripButton3.Size = new System.Drawing.Size(23, 22);
-            this.toolStripButton3.Text = "toolStripButton3";
-            // 
-            // label1
-            // 
-            this.label1.ForeColor = System.Drawing.SystemColors.Highlight;
-            this.label1.Location = new System.Drawing.Point(68, 28);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(200, 23);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "财务单据导入";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // label2
-            // 
-            this.label2.ForeColor = System.Drawing.SystemColors.Highlight;
-            this.label2.Location = new System.Drawing.Point(356, 28);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(153, 23);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "库存单据导入";
-            this.label2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // GLdataimportBT
-            // 
-            this.GLdataimportBT.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.GLdataimportBT.FlatAppearance.BorderColor = System.Drawing.SystemColors.Control;
-            this.GLdataimportBT.FlatAppearance.MouseDownBackColor = System.Drawing.Color.OldLace;
-            this.GLdataimportBT.FlatAppearance.MouseOverBackColor = System.Drawing.Color.OldLace;
-            this.GLdataimportBT.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.GLdataimportBT.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.GLdataimportBT.ImageIndex = 3;
-            this.GLdataimportBT.ImageList = this.imageList1;
-            this.GLdataimportBT.Location = new System.Drawing.Point(102, 68);
-            this.GLdataimportBT.Name = "GLdataimportBT";
-            this.GLdataimportBT.Size = new System.Drawing.Size(131, 23);
-            this.GLdataimportBT.TabIndex = 2;
-            this.GLdataimportBT.Text = "总账凭证导入";
-            this.GLdataimportBT.UseVisualStyleBackColor = true;
-            this.GLdataimportBT.Click += new System.EventHandler(this.GLdataimportBT_Click);
+            this.groupBox1.Location = new System.Drawing.Point(68, 54);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(200, 2);
+            this.groupBox1.TabIndex = 4;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "groupBox1";
             // 
             // receiptnoteBT
             // 
@@ -369,23 +326,43 @@
             this.receiptnoteBT.UseVisualStyleBackColor = true;
             this.receiptnoteBT.Click += new System.EventHandler(this.receiptnoteBT_Click);
             // 
-            // groupBox1
+            // GLdataimportBT
             // 
-            this.groupBox1.Location = new System.Drawing.Point(68, 54);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(200, 2);
-            this.groupBox1.TabIndex = 4;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "groupBox1";
+            this.GLdataimportBT.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.GLdataimportBT.FlatAppearance.BorderColor = System.Drawing.SystemColors.Control;
+            this.GLdataimportBT.FlatAppearance.MouseDownBackColor = System.Drawing.Color.OldLace;
+            this.GLdataimportBT.FlatAppearance.MouseOverBackColor = System.Drawing.Color.OldLace;
+            this.GLdataimportBT.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.GLdataimportBT.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.GLdataimportBT.ImageIndex = 3;
+            this.GLdataimportBT.ImageList = this.imageList1;
+            this.GLdataimportBT.Location = new System.Drawing.Point(102, 68);
+            this.GLdataimportBT.Name = "GLdataimportBT";
+            this.GLdataimportBT.Size = new System.Drawing.Size(131, 23);
+            this.GLdataimportBT.TabIndex = 2;
+            this.GLdataimportBT.Text = "总账凭证导入";
+            this.GLdataimportBT.UseVisualStyleBackColor = true;
+            this.GLdataimportBT.Click += new System.EventHandler(this.GLdataimportBT_Click);
             // 
-            // groupBox2
+            // label2
             // 
-            this.groupBox2.Location = new System.Drawing.Point(338, 54);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(200, 2);
-            this.groupBox2.TabIndex = 5;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "groupBox2";
+            this.label2.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.label2.Location = new System.Drawing.Point(356, 28);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(153, 23);
+            this.label2.TabIndex = 1;
+            this.label2.Text = "库存单据导入";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // label1
+            // 
+            this.label1.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.label1.Location = new System.Drawing.Point(68, 28);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(200, 23);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "财务单据导入";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // MainForm
             // 
@@ -406,8 +383,6 @@
             this.MainmenuStrip.PerformLayout();
             this.formstatusStrip.ResumeLayout(false);
             this.formstatusStrip.PerformLayout();
-            this.toolStrip1.ResumeLayout(false);
-            this.toolStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
@@ -437,12 +412,10 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusoperationdatetext;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel7;
         private System.Windows.Forms.ToolStrip toolStrip1;
-        private System.Windows.Forms.ToolStripButton toolStripButton1;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private Silver.UI.ToolBox u8toolBox;
         private System.Windows.Forms.TabControl U8tabCtl;
         private System.Windows.Forms.TabPage U8dataimporttabPage;
-        private System.Windows.Forms.ToolStripButton toolStripButton3;
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox1;
