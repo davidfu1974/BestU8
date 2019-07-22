@@ -14,8 +14,6 @@ using UFSoft.U8.Framework.Login.UI;
 using UFIDA.U8.Portal.Framework.Actions;
 using UFIDA.U8.Portal.Proxy.Actions;
 using System.IO;
-using NPOI.SS.UserModel;
-using NPOI.SS.Formula.Eval;
 using Microsoft.Office.Interop.Excel;
 
 namespace ImportGLVoucher
@@ -479,10 +477,9 @@ namespace ImportGLVoucher
             public void Run(UFIDA.U8.Portal.Framework.Actions.IAction action)
             {
                 string id = action.Id;
-                if (id == "closetab")
+                if (id == "about")
                 {
-                    MessageBox.Show("关闭按钮");
-
+                    //MessageBox.Show("关闭按钮");
                 }
             }
 
@@ -495,12 +492,13 @@ namespace ImportGLVoucher
         public UFIDA.U8.Portal.Proxy.Actions.NetAction[] CreateToolbar(clsLogin login)
         {
             IActionDelegate nsd = new NetSampleDelegate();
-            NetAction ac = new NetAction("closetab", nsd);
+            NetAction ac = new NetAction("about", nsd);
             NetAction[] aclist;
             aclist = new NetAction[1];
-            ac.Text = "关闭";
+            ac.Text = "关于";
             aclist[0] = ac;
             return aclist;
+
         }
 
     }
