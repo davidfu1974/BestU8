@@ -39,6 +39,7 @@
             this.importdataresulttextBox = new System.Windows.Forms.TextBox();
             this.importdatabutton = new System.Windows.Forms.Button();
             this.closebutton = new System.Windows.Forms.Button();
+            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.importtypeGB.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -137,11 +138,20 @@
             this.closebutton.UseVisualStyleBackColor = true;
             this.closebutton.Click += new System.EventHandler(this.closebutton_Click);
             // 
+            // toolStrip1
+            // 
+            this.toolStrip1.Location = new System.Drawing.Point(0, 0);
+            this.toolStrip1.Name = "toolStrip1";
+            this.toolStrip1.Size = new System.Drawing.Size(827, 25);
+            this.toolStrip1.TabIndex = 8;
+            this.toolStrip1.Text = "toolStrip1";
+            // 
             // DataImport
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(827, 450);
+            this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.closebutton);
             this.Controls.Add(this.importdatabutton);
             this.Controls.Add(this.importdataresulttextBox);
@@ -174,5 +184,6 @@
         private System.Windows.Forms.TextBox importdataresulttextBox;
         private System.Windows.Forms.Button importdatabutton;
         private System.Windows.Forms.Button closebutton;
+        private System.Windows.Forms.ToolStrip toolStrip1;
     }
 }

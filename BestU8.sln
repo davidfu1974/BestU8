@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BestU8", "BestU8\BestU8.csproj", "{CEAA0480-375D-4FBA-8E09-30E896F18F7D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImportGLVoucher", "ImportGLVoucher\ImportGLVoucher.csproj", "{E3E160A7-C8B3-4039-9F88-0F785DEFF3F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{CEAA0480-375D-4FBA-8E09-30E896F18F7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CEAA0480-375D-4FBA-8E09-30E896F18F7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CEAA0480-375D-4FBA-8E09-30E896F18F7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3E160A7-C8B3-4039-9F88-0F785DEFF3F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3E160A7-C8B3-4039-9F88-0F785DEFF3F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3E160A7-C8B3-4039-9F88-0F785DEFF3F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3E160A7-C8B3-4039-9F88-0F785DEFF3F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
