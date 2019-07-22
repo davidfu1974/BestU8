@@ -126,6 +126,14 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="用户客户端部署文件\ImportGLVoucher.dll" />
+    <Content Include="用户客户端部署文件\Interop.CVoucher.dll" />
+    <Content Include="用户客户端部署文件\readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="用户客户端部署文件\凭证V1.0.xlsx" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
