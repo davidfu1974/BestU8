@@ -116,6 +116,13 @@
       <DependentUpon>ImportReceiptNotes.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="用户客户端部署文件\ImportReceiptNotes.dll" />
+    <Content Include="用户客户端部署文件\readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="用户客户端部署文件\库存入库单V1.0.xlsx" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

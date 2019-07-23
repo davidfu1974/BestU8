@@ -72,6 +72,7 @@
             this.importdatabutton.TabIndex = 13;
             this.importdatabutton.Text = "数据导入";
             this.importdatabutton.UseVisualStyleBackColor = true;
+            this.importdatabutton.Click += new System.EventHandler(this.importdatabutton_Click);
             // 
             // importdatafiletextBox
             // 

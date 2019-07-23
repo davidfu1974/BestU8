@@ -491,14 +491,16 @@ namespace ImportGLVoucher
 
         public UFIDA.U8.Portal.Proxy.Actions.NetAction[] CreateToolbar(clsLogin login)
         {
-            IActionDelegate nsd = new NetSampleDelegate();
-            NetAction ac = new NetAction("about", nsd);
+            //IActionDelegate nsd = new NetSampleDelegate();
+            //NetAction ac = new NetAction("about", nsd);
+            //NetAction[] aclist;
+            //aclist = new NetAction[1];
+            //ac.Text = "关于";
+            //aclist[0] = ac;
             NetAction[] aclist;
             aclist = new NetAction[1];
-            ac.Text = "关于";
-            aclist[0] = ac;
+            aclist[0] = null;
             return aclist;
-
         }
 
     }

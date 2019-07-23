@@ -83,6 +83,7 @@ namespace ImportReceiptNotes
             dsexcel.Tables.Add(dtnpoidata);
             impstart = DateTime.Now.ToLocalTime().ToString();
             importdataresulttextBox.AppendText("数据导入执行开始:" + impstart + "\n");
+            importdataresulttextBox.AppendText("\n");
             importdataresulttextBox.Refresh();
             //调用采购入库单导入功能
             bool v_importreceiptnoteflag = ReceiptNoteimport(Pubvar.u8userdata, dsexcel, out importsuccessrows, out importfailurerows, out dstoexcel, out v_errmsg);
@@ -91,14 +92,18 @@ namespace ImportReceiptNotes
             //执行结果回写memo text
             impend = DateTime.Now.ToLocalTime().ToString();
             importdataresulttextBox.AppendText("此次数据导入共计执行：" + (importsuccessrows + importfailurerows) + " 条 \n");
-            importdataresulttextBox.AppendText("其中导入成功：" + importsuccessrows + " 条 \n");
-            importdataresulttextBox.AppendText("其中导入失败：" + importfailurerows + " 条 \n");
+            importdataresulttextBox.AppendText("\n");
+            importdataresulttextBox.AppendText("其中导入成功：" + importsuccessrows + " 条 , 导入失败： " + importfailurerows + " 条 \n");
+            importdataresulttextBox.AppendText("\n");
             importdataresulttextBox.AppendText("如果导入有出错，具体原因请看导入数据模板中错误信息列，请纠正后再次执行导入！\n");
+            importdataresulttextBox.AppendText("\n");
             if ((!v_importreceiptnoteflag) && (!string.IsNullOrEmpty(v_errmsg)))
             {
                 importdataresulttextBox.AppendText("系统调用出错：" + v_errmsg + "\n");
+                importdataresulttextBox.AppendText("\n");
             }
             importdataresulttextBox.AppendText("数据导入执行结束:" + impend + "  \n");
+            importdataresulttextBox.AppendText("\n");
             importdataresulttextBox.Refresh();
 
             //为防止用户多次点击导入按钮，将按钮禁用
@@ -109,7 +114,7 @@ namespace ImportReceiptNotes
         public bool ReceiptNoteimport(UFSoft.U8.Framework.LoginContext.UserData u8userdata, DataSet dsimportedreceiptnotes, out int importsuccessrows, out int importfailurerows, out DataSet dsreturnreceiptnotes, out string errmsg)
         {
             int v_importsuccessrows = 0, v_importfailurerows = 0;
-            string v_errmsg = "", v_groupby = "", v_receiptnotnumber = "", v_filterestr = "", v_bustype = "", v_source = "", v_cinvcode = "", v_cinvname = "", v_receiptnotedate = "", strprocess = "", v_warehoursecode = "";
+            string v_errmsg = "", v_groupby = "", v_receiptnotnumber = "", v_filterestr = "",  v_source = "",  v_cinvname = "", v_receiptnotedate = "", strprocess = "", v_warehoursecode = "";
             bool v_exitflag = false;
             DataRow[] drgroupby, drorderlines;
             System.Data.DataTable dtsql = new System.Data.DataTable();
@@ -907,12 +912,15 @@ namespace ImportReceiptNotes
 
         public UFIDA.U8.Portal.Proxy.Actions.NetAction[] CreateToolbar(clsLogin login)
         {
-            IActionDelegate nsd = new NetSampleDelegate();
-            NetAction ac = new NetAction("about", nsd);
+            //IActionDelegate nsd = new NetSampleDelegate();
+            //NetAction ac = new NetAction("about", nsd);
+            //NetAction[] aclist;
+            //aclist = new NetAction[1];
+            //ac.Text = "关于";
+            //aclist[0] = ac;
             NetAction[] aclist;
             aclist = new NetAction[1];
-            ac.Text = "关于";
-            aclist[0] = ac;
+            aclist[0] = null;
             return aclist;
         }
 
