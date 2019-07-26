@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("U8GLVouchers")]
+[assembly: AssemblyTitle("EventPlugInDemo")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("U8GLVouchers")]
+[assembly: AssemblyProduct("EventPlugInDemo")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("dce8a9f8-01b5-46bd-83d6-b3b224f57356")]
+[assembly: Guid("e5ea9383-b71b-45d7-943a-4acd3cc727ab")]
 
 // 程序集的版本信息由下列四个值组成: 
 //
