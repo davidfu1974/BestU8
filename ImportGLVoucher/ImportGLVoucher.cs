@@ -213,9 +213,33 @@ namespace ImportGLVoucher
             glcvoucher.LoginByUserToken(usertoken);
             //根据dataset中导入数据分组循环导入U8系统
             dsreturnvouchers = dsimportedvouchers.Clone();
+            //添加对账套的校验逻辑
+            System.Data.DataTable dtdistinctaccid= dsimportedvouchers.Tables["GLVouchers"].DefaultView.ToTable(true, new string[] { "账套" });
+            if (dtdistinctaccid.Rows.Count>1)
+            {
+                //返回数据导入是否成功标志
+                importsuccessrows = 0;
+                importfailurerows = 0;
+                conn.Close();
+                errmsg = "存在账套不唯一，请核查模板账套列数据";
+                return false;
+
+            }
+            else
+            {
+                if (dtdistinctaccid.Rows[0]["账套"].ToString() != Pubvar.accid)
+                {
+                    //返回数据导入是否成功标志
+                    importsuccessrows = 0;
+                    importfailurerows = 0;
+                    conn.Close();
+                    errmsg = "导入模板账套("+ dtdistinctaccid.Rows[0]["账套"].ToString() + ")与用户登陆U8账套(" + Pubvar.accid + ") 不一致，请核查！";
+                    return false;
+
+                }
+            }
             System.Data.DataTable dtdistinct = dsimportedvouchers.Tables["GLVouchers"].DefaultView.ToTable(true, new string[] { "凭证ID" });
             string vougroupby = "";
-
             //设置progressbar步长并显示百分比
             importdataprogressBar.Minimum = 0;   // 设置进度条最小值.
             importdataprogressBar.Value = 1;    // 设置进度条初始值
@@ -249,12 +273,14 @@ namespace ImportGLVoucher
                 {
                     for (int j = 0; j < drgroupby.Count(); j++)
                     {
-                        strSql = "INSERT INTO " + strTempTable +"(ioutperiod,coutsign ,cSign,coutno_id,cdigest,coutsysname,cbill,inid,ccode,cexch_name ,doutbilldate,bvouchedit,bvouchaddordele,bvouchmoneyhold,bvalueedit,bcodeedit,md,mc,cdept_id,cperson_id,ccus_id,csup_id,citem_class,citem_id,cname) ";
+                        strSql = "INSERT INTO " + strTempTable + "(ioutperiod,coutsign ,cSign,coutno_id,cdigest,ctext1,coutsysname,cbill,inid,ccode,cexch_name ,doutbilldate,bvouchedit,bvouchaddordele,bvouchmoneyhold,bvalueedit,bcodeedit,md_f,mc_f,md,mc,nfrat,cdept_id,cperson_id,ccus_id,csup_id,citem_class,citem_id,cDefine12,cDefine13) ";
                         strSql = strSql + "VALUES(" + drgroupby[j]["会计期间"].ToString();
                         strSql = strSql + ",'" + drgroupby[j]["凭证类别"].ToString();
                         strSql = strSql + "','" + drgroupby[j]["凭证类别"].ToString();
                         strSql = strSql + "','" + drgroupby[j]["凭证ID"].ToString();
                         strSql = strSql + "','" + drgroupby[j]["摘要"].ToString();
+                        strSql = strSql + "','" + drgroupby[j]["原凭证号"].ToString();
+                        
                         strSql = strSql + "','" + "GL";   //这里外部系统设置为总账，否则导入的凭证默认无法修改。
                         strSql = strSql + "','" + userid;
                         strSql = strSql + "'," + (j + 1).ToString();   //行号
@@ -266,30 +292,60 @@ namespace ImportGLVoucher
                         strSql = strSql + "," + 1;   //bvouchmoneyhold
                         strSql = strSql + "," + 1;   //bvalueedit,bcodeedit
                         strSql = strSql + "," + 1;   //bcodeedit
-                        if (string.IsNullOrEmpty(drgroupby[j]["借方金额"].ToString()))
+                        //外币借贷
+                        if (string.IsNullOrEmpty(drgroupby[j]["借方原币金额"].ToString()))
+                        {
+                            strSql = strSql + "," + 0;   //md_f
+                        }
+                        else
+                        {
+                            strSql = strSql + "," + drgroupby[j]["借方原币金额"].ToString();   //md
+                        }
+
+                        if (string.IsNullOrEmpty(drgroupby[j]["贷方原币金额"].ToString()))
+                        {
+                            strSql = strSql + "," + 0;   //mc_f
+                        }
+                        else
+                        {
+                            strSql = strSql + "," + drgroupby[j]["贷方原币金额"].ToString();   //mc
+                        }
+
+                        //本位币借贷
+                        if (string.IsNullOrEmpty(drgroupby[j]["借方本位币金额"].ToString()))
                         {
                             strSql = strSql + "," + 0;   //md
                         }
                         else
                         {
-                            strSql = strSql + "," + drgroupby[j]["借方金额"].ToString();   //md
+                            strSql = strSql + "," + drgroupby[j]["借方本位币金额"].ToString();   //md
                         }
 
-                        if (string.IsNullOrEmpty(drgroupby[j]["贷方金额"].ToString()))
+                        if (string.IsNullOrEmpty(drgroupby[j]["贷方本位币金额"].ToString()))
                         {
                             strSql = strSql + "," + 0;   //mc
                         }
                         else
                         {
-                            strSql = strSql + "," + drgroupby[j]["贷方金额"].ToString();   //mc
+                            strSql = strSql + "," + drgroupby[j]["贷方本位币金额"].ToString();   //mc
                         }
-                        strSql = strSql + ",'" + drgroupby[j]["部门编码"].ToString();          //部门编码
-                        strSql = strSql + "','" + drgroupby[j]["职员编码"].ToString();          //职员编码
-                        strSql = strSql + "','" + drgroupby[j]["客户编码"].ToString();          //客户编码
-                        strSql = strSql + "','" + drgroupby[j]["供应商编码"].ToString();          //供应商编码
-                        strSql = strSql + "','" + drgroupby[j]["项目大类编码"].ToString();        //物料大类编码
-                        strSql = strSql + "','" + drgroupby[j]["项目编码"].ToString();            //物料编码
-                        strSql = strSql + "','" + drgroupby[j]["业务员"].ToString() + "')";         //业务员
+                        //汇率
+                        if (string.IsNullOrEmpty(drgroupby[j]["汇率"].ToString()))
+                        {
+                            strSql = strSql + "," + 0;   
+                        }
+                        else
+                        {
+                            strSql = strSql + "," + drgroupby[j]["汇率"].ToString();   
+                        }
+                        strSql = strSql + ",'" + drgroupby[j]["部门编码"].ToString();               //部门编码
+                        strSql = strSql + "','" + drgroupby[j]["职员编码"].ToString();              //职员编码
+                        strSql = strSql + "','" + drgroupby[j]["客户编码"].ToString();              //客户编码
+                        strSql = strSql + "','" + drgroupby[j]["供应商编码"].ToString();            //供应商编码
+                        strSql = strSql + "','" + drgroupby[j]["项目大类编码"].ToString();          //物料大类编码
+                        strSql = strSql + "','" + drgroupby[j]["项目编码"].ToString();              //物料编码
+                        strSql = strSql + "','" + drgroupby[j]["政府项目"].ToString();              //政府项目
+                        strSql = strSql + "','" + drgroupby[j]["资金来源"].ToString() + "')";       //资金来源
                         rs = conn.Execute(strSql, out rsaffected, -1);
                     }
                     //凭证导入U8中制单
@@ -464,7 +520,7 @@ namespace ImportGLVoucher
             Pubvar.ConnString = login.GetLoginInfo().ConnString.ToString();
             Pubvar.UserId = login.GetLoginInfo().UserName.ToString();
             Pubvar.userToken = login.userToken.ToString();
-
+            Pubvar.accid = login.GetLoginInfo().AccID.ToString();
 
             //初始化自定义用户控件对象
             bestglimportusercontrol = new ImportGLVoucher();
@@ -512,6 +568,8 @@ namespace ImportGLVoucher
         public static string UserId;
 
         public static string userToken;
+
+        public static string accid;
     }
 
     public class ExcelHelper
