@@ -70,13 +70,23 @@ namespace ImportGLVoucher
 
             //总账凭证导入
             string impstart, impend, v_errmsg;
-            dtnpoidata = npoidata.ReadExcelToDatatble("GLVouchers", importdatafiletextBox.Text, 1, 1);
-            dtnpoidata.TableName = "GLVouchers";
-            dsexcel.Tables.Add(dtnpoidata);
-            impstart = DateTime.Now.ToLocalTime().ToString();
-            importdataresulttextBox.AppendText("数据导入执行开始......:   " + impstart + "  \n");
-            importdataresulttextBox.AppendText("\n");
-            importdataresulttextBox.Refresh();
+            try
+            {
+                dtnpoidata = npoidata.ReadExcelToDatatble("GLVouchers", importdatafiletextBox.Text, 1, 1);
+                dtnpoidata.TableName = "GLVouchers";
+                dsexcel.Tables.Add(dtnpoidata);
+                impstart = DateTime.Now.ToLocalTime().ToString();
+                importdataresulttextBox.AppendText("数据导入执行开始......:   " + impstart + "  \n");
+                importdataresulttextBox.AppendText("\n");
+                importdataresulttextBox.Refresh();
+            }
+            catch (Exception ex)
+            {
+
+                importdataresulttextBox.AppendText("系统异常出错：" + ex.Message + " ，请联系IT解决. \n");
+                return;
+            }
+
             //ExcelHelper.wl.WriteLogs("Debug ......");
 
             //调用总账导入功能
@@ -106,7 +116,9 @@ namespace ImportGLVoucher
             catch (Exception ex)
             {
 
-                //ExcelHelper.wl.WriteLogs(ex.Message);
+                importdataresulttextBox.AppendText("系统异常出错：" + ex.Message + " ，请联系IT解决. \n");
+                return;
+
             }
 
         }
@@ -582,7 +594,9 @@ namespace ImportGLVoucher
             Microsoft.Office.Interop.Excel.Application excel;
             Microsoft.Office.Interop.Excel.Workbook excelworkBook;
             Microsoft.Office.Interop.Excel.Worksheet excelSheet;
-            Microsoft.Office.Interop.Excel.Range range;
+            Microsoft.Office.Interop.Excel.Range range=null;
+            int i=0, j=0;
+            string dateformat="";
             try
             {
                 // Start Excel and get Application object.
@@ -603,24 +617,28 @@ namespace ImportGLVoucher
                 // loop through each row and add values to our sheet
                 int rowcount = range.Rows.Count; ;
 
-                for (int j = ColumnStart; j <= cl; j++)
+                for (j = ColumnStart; j <= cl; j++)
                 {
                     dataTable.Columns.Add(Convert.ToString(((Range)(range.Cells[HeaderLine, j])).Value2), typeof(string));
                 }
-                for (int i = HeaderLine + 1; i <= rowcount; i++)
+                for (i = HeaderLine + 1; i <= rowcount; i++)
                 {
                     DataRow dr = dataTable.NewRow();
-                    for (int j = ColumnStart; j <= cl; j++)
+                    for (j = ColumnStart; j <= cl; j++)
                     {
                         //判断是否为日期格式的单元格
-                        string dateformat = ((Range)(range.Cells[i, j])).NumberFormat.ToString();
+                        dateformat = ((Range)(range.Cells[i, j])).NumberFormat.ToString();
                         if (dateformat.IndexOf("yyyy") == -1)
                         {
+                            //wl.WriteLogs("excel import 1");
                             dr[j - ColumnStart] = Convert.ToString(((Range)(range.Cells[i, j])).Value2);
+                            //wl.WriteLogs("excel import 2");
                         }
                         else
                         {
+                            //wl.WriteLogs("excel import 3");
                             dr[j - ColumnStart] = DateTime.FromOADate(Convert.ToDouble(((Range)(range.Cells[i, j])).Value2)).ToString("yyyy-MM-dd");
+                            //wl.WriteLogs("excel import 4");
                         }
                     }
                     // on the first iteration we add the column headers
@@ -633,6 +651,7 @@ namespace ImportGLVoucher
             }
             catch (Exception ex)
             {
+                //wl.WriteLogs("excel import 错误信息：" + ex.Message  + "i=" + i +"j="+j + "dateformat="+ dateformat + "cell="+ Convert.ToString(((Range)(range.Cells[i, j])).Value2));
                 return null;
             }
             finally
